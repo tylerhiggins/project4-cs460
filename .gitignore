@@ -1,0 +1,5 @@
+*.o
+BackItUp
+.DS_Store
+*.swp
+sftp/
