@@ -1,5 +1,4 @@
 # TODO #
-[1] Copy all regular files from the working directory to the .backup directory\
 [2] Compare last modification times of duplicate files before overwriting, and inform the user\
 [3] Create a thread to copy each file\
 [4] Perform a restore operation when the -r flag is specified\
@@ -12,6 +11,7 @@
 ## Tyler ##
 
 ## Jacob ##
+[1] Copy all regular files from the working directory to the .backup directory
 
 ## Julian ##
 
