@@ -11,8 +11,8 @@
 ## Tyler ##
 
 ## Jacob ##
-[1] Copy all regular files from the working directory to the .backup directory
 
 ## Julian ##
 
 # Completed #
+[1] Copy all regular files from the working directory to the .backup directory
