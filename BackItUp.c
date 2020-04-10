@@ -27,6 +27,7 @@ int createBackupDir(){
 			return 0;
 		}else{
 			printError(strerror(errno));
+			return 1;
 		}
 	}
 	return 0;
@@ -106,9 +107,13 @@ int recursiveCopy( char* dname ){
 
 int main(int argc, char **argv) {
 
-	createBackupDir();
+	if( createBackupDir() ){
+		return 1;
+	}
 
-	recursiveCopy("testdir");
+	if(recursiveCopy("testdir")){
+		return 1;
+	}
 
 	return 0;
 }
