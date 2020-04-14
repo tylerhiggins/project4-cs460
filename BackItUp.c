@@ -77,7 +77,7 @@ int recursiveCopy( char* dname ){
 			char fname[256] = "";
 			strcat(fname, dname);
 			strcat( fname, "/" );
-			strncat(fname, ds->d_name, sizeof(ds->d_name));
+			strncat(fname, ds->d_name, strlen(ds->d_name));
 
 			//treating symlinks as symlinks, not the files they link to
 			int err = lstat(fname, &st);
@@ -99,7 +99,7 @@ int recursiveCopy( char* dname ){
 				}
 				//make a new file for the copy
 				char dest[256] = "testdir/.backup/";
-				strncat(dest, ds->d_name, sizeof(ds->d_name));
+				strncat(dest, ds->d_name, strlen(ds->d_name));
 				strcat(dest, ".bak");
 
 				int exists = access( dest, F_OK ) != -1;
@@ -137,15 +137,117 @@ int recursiveCopy( char* dname ){
 	closedir(dir);
 }
 
+int backupToMainPath( char* result, char* dirName, char* fileName ){
+	//assume the file name has a .bak extension
+	strncat(result, dirName, strlen(dirName)-7);
+	strncat(result, fileName, strlen(fileName)-4);
+	return 0;
+}
+
+int recursiveRestore( char* dname ){
+	//similar to recursive copy, only moving files from the 
+	// backup directory to the main directory
+	DIR *backupDir = opendir(dname);
+	struct dirent *backupDirent;
+
+	while( (backupDirent = readdir(backupDir)) != NULL ){
+		//check the current object
+		if( strncmp( backupDirent->d_name, ".", 1 ) == 0 || strncmp(backupDirent->d_name, "..", 2) == 0 ){
+			//skip the current and previous directory notation
+			continue;
+		}
+
+
+		//prepend the working directory to the file name
+		char fname[256] = "";
+		strcat(fname, dname);
+		strcat(fname, "/");
+		strncat(fname, backupDirent->d_name, strlen(backupDirent->d_name));
+
+		struct stat backup;
+		int err = lstat(fname, &backup);
+		if( err == -1 ){
+			printError(strerror(errno));
+			return 1;
+		}
+
+		//check if it is a regular file
+		if( S_ISREG( backup.st_mode ) ){
+			if( DEBUG ){
+				printf("Working on file %s\n", fname);
+			}
+
+			//copy the regular file to the main directory
+			//check if the file already exists and/or is newer than the backup
+			int canCopy = 1;
+			char newDest[256] = "";
+			if( access(fname, F_OK) != -1 ){
+				//file exists
+				struct stat tmp;
+				
+				backupToMainPath(newDest, dname, backupDirent->d_name);
+
+				err = lstat(newDest, &tmp);
+				if( err == -1 ){
+					printError(strerror(errno));
+					return 1;
+				}
+
+				//compare modification times
+				canCopy = (backup.st_mtime < tmp.st_mtime);
+			}
+
+			if( canCopy ){
+				if( DEBUG ){
+					printf("Restoring file.\n");
+				}
+				//perform the copy
+
+				//open file for reading only
+				FILE *fp = fopen(fname, "r");
+				if( fp == NULL ){
+					printError(strerror(errno));
+					return 1;
+				}
+				copyFile(fp, newDest);
+
+			}else if( DEBUG ){
+				printf("Not restoring newer or up-to-date backup file.\n");
+			}
+
+		}else if( S_ISDIR( backup.st_mode ) ){
+			printf("TODO: skipping directory restoration\n");
+		}
+
+	}
+
+}
+
 
 int main(int argc, char **argv) {
 
-	if( createBackupDir() ){
-		return 1;
+	int restore = 0;
+	for( int i = 0; i < argc; i++ ){
+		if( strncmp(argv[i], "-r", 2) == 0 ){
+			restore = 1;
+			break;
+		}
 	}
 
-	if(recursiveCopy("testdir")){
-		return 1;
+	if( restore ){
+		if( DEBUG ){
+			printf("Restoring from backup.\n");
+		}
+		recursiveRestore("testdir/.backup");
+
+	}else{
+		if( createBackupDir() ){
+			return 1;
+		}
+
+		if(recursiveCopy("testdir")){
+			return 1;
+		}
 	}
 
 	return 0;
