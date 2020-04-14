@@ -30,3 +30,5 @@ each file being copied. (5 pts)
 7. Notes: You will want to check out the following Unix system calls for C: stat(),
 opendir(), and readdir().
 In the figure below, you can see the output of BackItUp in the following sample interaction.
+
+Modified 4/14 at 2:42 PM

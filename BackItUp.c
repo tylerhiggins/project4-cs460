@@ -30,21 +30,20 @@ int createBackupDir(){
 			return 1;
 		}
 	}
+	if( DEBUG ){
+		printf("Backup directory does not exist, creating.\n");
+	}
 	return 0;
 }
 
 int copyFile(FILE *fp, char* fname){
-	//make a new file
-	char dest[256] = "testdir/.backup/";
-	strncat(dest, fname, sizeof(fname));
-	strcat(dest, ".bak");
 
 	if( DEBUG ){
-		printf("Making copy at %s\n", dest);
+		printf("Making copy at %s\n", fname);
 	}
 
 	//create a new file for writing
-	FILE *new = fopen(dest, "w+");
+	FILE *new = fopen(fname, "w+");
 	if( new == NULL ){
 		printError(strerror(errno));
 		return 1;
@@ -88,6 +87,9 @@ int recursiveCopy( char* dname ){
 			}
 			//check if this is a regular file
 			if( S_ISREG( st.st_mode ) ){
+				if( DEBUG ){
+					printf("Working on file %s\n", fname );
+				}
 				//if so, copy the file to the backup directory
 				//open just for reading
 				FILE* fp = fopen(fname, "r");
@@ -95,7 +97,37 @@ int recursiveCopy( char* dname ){
 					printError(strerror(errno));
 					return 1;
 				}
-				copyFile(fp, ds->d_name);
+				//make a new file for the copy
+				char dest[256] = "testdir/.backup/";
+				strncat(dest, ds->d_name, sizeof(ds->d_name));
+				strcat(dest, ".bak");
+
+				int exists = access( dest, F_OK ) != -1;
+				int canCopy = 1;
+
+				if( exists ){
+					if( DEBUG ){
+						printf("Backup file already exists, checking modification times.\n");
+					}
+					struct stat testSt;
+					err = lstat(dest, &testSt);
+					if( err == -1 ){
+						printError(strerror(errno));
+						return 1;
+					}
+					//true if the backup file was last modified before the main file
+					canCopy = testSt.st_mtime < st.st_mtime;
+				}
+
+				if( canCopy ){
+					if( exists ){
+						printf("Overwriting outdated backup file.\n");
+					}
+					copyFile(fp, dest);	
+				}else if( exists ){
+					printf("Backup file is already up-to-date.\n");
+				}
+				
 				fclose(fp);
 			}else if( S_ISDIR( st.st_mode ) ){
 				printf("TODO: skipping directory\n");

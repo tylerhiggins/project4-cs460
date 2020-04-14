@@ -3,4 +3,4 @@ BackItUp
 .DS_Store
 *.swp
 sftp/
-testdir/.backup
+testdir/
