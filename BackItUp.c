@@ -37,6 +37,7 @@ int copyFile(FILE *fp, char* fname){
 	//make a new file
 	char dest[256] = "testdir/.backup/";
 	strncat(dest, fname, sizeof(fname));
+	strcat(dest, ".bak");
 
 	if( DEBUG ){
 		printf("Making copy at %s\n", dest);
