@@ -11,6 +11,7 @@
 ## Tyler ##
 
 ## Jacob ##
+[2] Compare last modification times of duplicate files before overwriting, and inform the user
 
 ## Julian ##
 
