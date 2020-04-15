@@ -1,12 +1,12 @@
 # TODO #
 [3] Create a thread to copy each file\
-[6] Create a thread to restore each file\
 [7] Modify program to work recursively on directories
 ## Tests ##
 
 # Issues In Progress #
 
 ## Tyler ##
+[6] Create a thread to restore each file\
 
 ## Jacob ##
 
