@@ -36,6 +36,61 @@ int createBackupDir(){
 	return 0;
 }
 
+
+/* 
+This method is handed off to a thread,
+opens the original file for reading
+and backs up the file by making a copy
+*/
+// TODO also need to hand off ds and st
+void createBackupFile(char* fname, char* dest, time_t lastModified) {
+if( DEBUG ){
+		printf("Working on file %s\n", fname );
+	}
+	//if so, copy the file to the backup directory
+	//open just for reading
+	FILE* fp = fopen(fname, "r");
+	if( fp == NULL ){
+		printError(strerror(errno));
+		return;
+	}
+	// //make a new filename for the copy
+	// char dest[256] = "testdir/.backup/";
+	// strncat(dest, ds->d_name, strlen(ds->d_name));
+	// strcat(dest, ".bak");
+
+	int exists = access( dest, F_OK ) != -1;
+	int canCopy = 1;
+
+	if( exists ){
+		if( DEBUG ){
+			printf("Backup file already exists, checking modification times.\n");
+		}
+		struct stat testSt;
+		int err = lstat(dest, &testSt);
+		if( err == -1 ){
+			printError(strerror(errno));
+			return;
+		}
+		//true if the backup file was last modified before the main file
+		canCopy = testSt.st_mtime < lastModified;
+	}
+
+	if( canCopy ){
+		if( exists ){
+			printf("Overwriting outdated backup file.\n");
+		}
+		copyFile(fp, dest);	
+	}else if( exists ){
+		printf("Backup file is already up-to-date.\n");
+	}
+	
+	fclose(fp);
+
+}
+
+
+// writes a copy of fp to fname
 int copyFile(FILE *fp, char* fname){
 
 	if( DEBUG ){
@@ -87,49 +142,63 @@ int recursiveCopy( char* dname ){
 			}
 			//check if this is a regular file
 			if( S_ISREG( st.st_mode ) ){
-				if( DEBUG ){
-					printf("Working on file %s\n", fname );
-				}
-				//if so, copy the file to the backup directory
-				//open just for reading
-				FILE* fp = fopen(fname, "r");
-				if( fp == NULL ){
-					printError(strerror(errno));
-					return 1;
-				}
-				//make a new file for the copy
+
+				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
 				strncat(dest, ds->d_name, strlen(ds->d_name));
-				strcat(dest, ".bak");
+				strcat(dest, ".bak");		// TODO use strncat
 
-				int exists = access( dest, F_OK ) != -1;
-				int canCopy = 1;
+				// TODO call this with pthread
+				createBackupFile(fname, dest, st.st_mtime);
 
-				if( exists ){
-					if( DEBUG ){
-						printf("Backup file already exists, checking modification times.\n");
-					}
-					struct stat testSt;
-					err = lstat(dest, &testSt);
-					if( err == -1 ){
-						printError(strerror(errno));
-						return 1;
-					}
-					//true if the backup file was last modified before the main file
-					canCopy = testSt.st_mtime < st.st_mtime;
-				}
+				// TODO spin up thread here
 
-				if( canCopy ){
-					if( exists ){
-						printf("Overwriting outdated backup file.\n");
-					}
-					copyFile(fp, dest);	
-				}else if( exists ){
-					printf("Backup file is already up-to-date.\n");
-				}
+				// if( DEBUG ){
+				// 	printf("Working on file %s\n", fname );
+				// }
+				// //if so, copy the file to the backup directory
+				// //open just for reading
+				// FILE* fp = fopen(fname, "r");
+				// if( fp == NULL ){
+				// 	printError(strerror(errno));
+				// 	return 1;
+				// }
+				// //make a new filename for the copy
+				// char dest[256] = "testdir/.backup/";
+				// strncat(dest, ds->d_name, strlen(ds->d_name));
+				// strcat(dest, ".bak");
+
+				// int exists = access( dest, F_OK ) != -1;
+				// int canCopy = 1;
+
+				// if( exists ){
+				// 	if( DEBUG ){
+				// 		printf("Backup file already exists, checking modification times.\n");
+				// 	}
+				// 	struct stat testSt;
+				// 	err = lstat(dest, &testSt);
+				// 	if( err == -1 ){
+				// 		printError(strerror(errno));
+				// 		return 1;
+				// 	}
+				// 	//true if the backup file was last modified before the main file
+				// 	canCopy = testSt.st_mtime < st.st_mtime;
+				// }
+
+				// if( canCopy ){
+				// 	if( exists ){
+				// 		printf("Overwriting outdated backup file.\n");
+				// 	}
+				// 	copyFile(fp, dest);	
+				// }else if( exists ){
+				// 	printf("Backup file is already up-to-date.\n");
+				// }
 				
-				fclose(fp);
-			}else if( S_ISDIR( st.st_mode ) ){
+				// fclose(fp);
+
+				// TODO join pthread
+			}
+			else if( S_ISDIR( st.st_mode ) ){
 				printf("TODO: skipping directory\n");
 			}
 		}
