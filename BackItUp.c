@@ -43,7 +43,8 @@ opens the original file for reading
 and backs up the file by making a copy
 */
 // TODO also need to hand off ds and st
-void createBackupFile(char* fname, char* dest, time_t lastModified) {
+// void createBackupFile(char* fname, char* dest, time_t lastModified) {
+void createBackupFile(struct thread_args) {
 if( DEBUG ){
 		printf("Working on file %s\n", fname );
 	}
@@ -149,7 +150,15 @@ int recursiveCopy( char* dname ){
 				strcat(dest, ".bak");		// TODO use strncat
 
 				// TODO call this with pthread
-				createBackupFile(fname, dest, st.st_mtime);
+				// createBackupFile(fname, dest, st.st_mtime);
+				struct args;
+				// TODO copy  fname to args.filename
+				// TODO copy dest to args.destination
+				// TODO copy st.st_mtime to args.modified time
+				
+
+				pthread_t copy;
+				pthread_create(&copy, NULL, createBackupFile, &args);
 
 				// TODO spin up thread here
 

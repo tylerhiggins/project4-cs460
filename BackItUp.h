@@ -10,4 +10,10 @@ int copyFile(FILE* fp, char* fname);
 
 int recursiveCopy(char* dname);
 
+struct thread_args {
+    time_t modifiedTime;
+    char filename[256];
+    char destination[256];
+};
+
 #endif
