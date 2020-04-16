@@ -1,5 +1,5 @@
 # TODO #
-[3] Create a thread to copy each file\
+
 [7] Modify program to work recursively on directories
 ## Tests ##
 
@@ -11,6 +11,7 @@
 ## Jacob ##
 
 ## Julian ##
+[3] Create a thread to copy each file
 
 # Completed #
 [1] Copy all regular files from the working directory to the .backup directory\
