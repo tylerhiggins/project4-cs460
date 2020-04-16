@@ -1,4 +1,4 @@
-
+#include <stdio.h>
 #ifndef BACKITUP_H
 #define BACKITUP_H
 
@@ -8,6 +8,12 @@ struct thread_args {
     char destination[256];
 };
 
+struct restore_args {
+    FILE *fileToRestore;
+    char destination[256];
+    int threadNum;
+
+};
 void printError(char* error);
 
 int createBackupDir();

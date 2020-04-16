@@ -45,7 +45,7 @@ and backs up the file by making a copy
 void * createBackupFile(void *argument) {
 	// load in the struct
 	struct thread_args args = *(struct thread_args*)argument;
-	if (DEBUG) { printf("Thread %d creating backup of: %s\n", pthread_self(), args.filename);}
+	if (DEBUG) { printf("Thread %ld creating backup of: %s\n", pthread_self(), args.filename);}
 
 	//if so, copy the file to the backup directory
 	//open just for reading
@@ -89,7 +89,7 @@ void * createBackupFile(void *argument) {
 
 // writes a copy of fp to fname
 int copyFile(FILE *fp, char* fname){
-
+	int bytes_copied = 0;
 	if( DEBUG ){
 		printf("Making copy at %s\n", fname);
 	}
@@ -98,7 +98,7 @@ int copyFile(FILE *fp, char* fname){
 	FILE *new = fopen(fname, "w+");
 	if( new == NULL ){
 		printError(strerror(errno));
-		return 1;
+		return -1;
 	}
 	while( 1 ){
 		char b;
@@ -109,9 +109,11 @@ int copyFile(FILE *fp, char* fname){
 		}
 
 		fwrite(&b, 1, 1, new);
+		bytes_copied++;
 	}
 
 	fclose(new);
+	return bytes_copied;
 }
 
 int recursiveCopy( char* dname ){
@@ -171,10 +173,31 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 	strncat(result, fileName, strlen(fileName)-4);
 	return 0;
 }
+void *restoreThread(void *arg){
 
+	struct restore_args args = *(struct restore_args*)arg;
+	char destination[256];
+	strncpy(destination,args.destination,strlen(args.destination));
+	char *filename = NULL;
+	char *tmp;
+	char *rest = destination;
+	while((tmp = strtok_r(rest,"/",&rest))){
+		filename = tmp;
+	}
+	printf("[thread %d] Backing up %s\n",args.threadNum,filename);
+	int bytes = copyFile(args.fileToRestore,args.destination);
+	if(bytes != -1){
+		printf("[thread %d] Copied %d bytes from %s.bak to %s\n", args.threadNum,bytes,
+			filename,filename);
+	} else {
+		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
+	} 
+
+}
 int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
 	// backup directory to the main directory
+	int num_threads = 0;
 	DIR *backupDir = opendir(dname);
 	struct dirent *backupDirent;
 
@@ -203,7 +226,6 @@ int recursiveRestore( char* dname ){
 			if( DEBUG ){
 				printf("Working on file %s\n", fname);
 			}
-
 			//copy the regular file to the main directory
 			//check if the file already exists and/or is newer than the backup
 			int canCopy = 1;
@@ -217,11 +239,10 @@ int recursiveRestore( char* dname ){
 				err = lstat(newDest, &tmp);
 				if( err == -1 ){
 					printError(strerror(errno));
-					return 1;
-				}
-
+				} else{
 				//compare modification times
-				canCopy = (backup.st_mtime < tmp.st_mtime);
+					canCopy = (backup.st_mtime < tmp.st_mtime);
+				}
 			}
 
 			if( canCopy ){
@@ -229,14 +250,23 @@ int recursiveRestore( char* dname ){
 					printf("Restoring file.\n");
 				}
 				//perform the copy
-
+				struct restore_args args;
 				//open file for reading only
 				FILE *fp = fopen(fname, "r");
 				if( fp == NULL ){
 					printError(strerror(errno));
 					return 1;
 				}
-				copyFile(fp, newDest);
+				args.fileToRestore = fp;
+				strncpy(args.destination,newDest,strlen(newDest));
+				if(DEBUG){
+					printf("args.destination: %s\n",args.destination);
+				}
+				num_threads++;
+				args.threadNum = num_threads;
+				pthread_t restoreT;
+				pthread_create(&restoreT,NULL,restoreThread,&args);
+				pthread_join(restoreT,NULL);
 
 			}else if( DEBUG ){
 				printf("Not restoring newer or up-to-date backup file.\n");
