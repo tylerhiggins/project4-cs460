@@ -36,6 +36,58 @@ int createBackupDir(){
 	return 0;
 }
 
+
+/* 
+This method is handed off to a thread,
+opens the original file for reading
+and backs up the file by making a copy
+*/
+void * createBackupFile(void *argument) {
+	// load in the struct
+	struct thread_args args = *(struct thread_args*)argument;
+	if (DEBUG) { printf("Thread %d creating backup of: %s\n", pthread_self(), args.filename);}
+
+	//if so, copy the file to the backup directory
+	//open just for reading
+	FILE* fp = fopen(args.filename, "r");
+	if( fp == NULL ){
+		printError(strerror(errno));
+		exit(-1);
+	}
+	if (DEBUG) { printf("Opened file: %s\n", args.filename );}
+
+	int exists = access( args.destination, F_OK ) != -1;
+	int canCopy = 1;
+	if( exists ){
+		if( DEBUG ){
+			printf("Backup file already exists, checking modification times.\n");
+		}
+		struct stat testSt;
+		int err = lstat(args.destination, &testSt);
+		if( err == -1 ){
+			printError(strerror(errno));
+			exit(-1);
+		}
+		//true if the backup file was last modified before the main file
+		canCopy = testSt.st_mtime < args.modifiedTime;
+	}
+
+	if( canCopy ){
+		if( exists ){
+			printf("Overwriting outdated backup file.\n");
+		}
+		if (DEBUG) { printf("Copying file: %s to %s\n", args.filename, args.destination);}
+		copyFile(fp, args.destination);	
+	}else if( exists ){
+		printf("Backup file is already up-to-date.\n");
+	}
+	
+	fclose(fp);
+
+}
+
+
+// writes a copy of fp to fname
 int copyFile(FILE *fp, char* fname){
 
 	if( DEBUG ){
@@ -75,9 +127,9 @@ int recursiveCopy( char* dname ){
 			struct stat st;
 			
 			char fname[256] = "";
-			strcat(fname, dname);
-			strcat( fname, "/" );
-			strncat(fname, ds->d_name, strlen(ds->d_name));
+			strncat(fname, dname, strlen(fname) + strlen(dname) + 1);
+			strncat( fname, "/", strlen(fname) + 2);
+			strncat(fname, ds->d_name, strlen(fname) + strlen(ds->d_name) + 1);
 
 			//treating symlinks as symlinks, not the files they link to
 			int err = lstat(fname, &st);
@@ -87,49 +139,25 @@ int recursiveCopy( char* dname ){
 			}
 			//check if this is a regular file
 			if( S_ISREG( st.st_mode ) ){
-				if( DEBUG ){
-					printf("Working on file %s\n", fname );
-				}
-				//if so, copy the file to the backup directory
-				//open just for reading
-				FILE* fp = fopen(fname, "r");
-				if( fp == NULL ){
-					printError(strerror(errno));
-					return 1;
-				}
-				//make a new file for the copy
+
+				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
-				strncat(dest, ds->d_name, strlen(ds->d_name));
-				strcat(dest, ".bak");
+				strncat(dest, ds->d_name, strlen(dest) + strlen(ds->d_name) + 1);
+				strncat(dest, ".bak", strlen(dest) + strlen(".bak") + 1);
 
-				int exists = access( dest, F_OK ) != -1;
-				int canCopy = 1;
+				// store variables in struct to avoid sharing memory
+				struct thread_args args;
+				strncpy(args.filename, fname, strlen(fname));
+				strncpy(args.destination, dest, strlen(dest));
+				args.modifiedTime = st.st_mtime;
 
-				if( exists ){
-					if( DEBUG ){
-						printf("Backup file already exists, checking modification times.\n");
-					}
-					struct stat testSt;
-					err = lstat(dest, &testSt);
-					if( err == -1 ){
-						printError(strerror(errno));
-						return 1;
-					}
-					//true if the backup file was last modified before the main file
-					canCopy = testSt.st_mtime < st.st_mtime;
-				}
+				// call the thread
+				pthread_t copy;
+				pthread_create(&copy, NULL, createBackupFile, &args);
+				pthread_join(copy, NULL);
 
-				if( canCopy ){
-					if( exists ){
-						printf("Overwriting outdated backup file.\n");
-					}
-					copyFile(fp, dest);	
-				}else if( exists ){
-					printf("Backup file is already up-to-date.\n");
-				}
-				
-				fclose(fp);
-			}else if( S_ISDIR( st.st_mode ) ){
+			}
+			else if( S_ISDIR( st.st_mode ) ){
 				printf("TODO: skipping directory\n");
 			}
 		}
@@ -156,7 +184,6 @@ int recursiveRestore( char* dname ){
 			//skip the current and previous directory notation
 			continue;
 		}
-
 
 		//prepend the working directory to the file name
 		char fname[256] = "";
