@@ -21,6 +21,14 @@ c.o:
 valgrind: clean all
 	valgrind --leak-check=full ./${BACKITUP}
 
+# removes backup for testing
+rm:
+	rm -r testdir/.backup/
+
+# show the back files
+show:
+	ls -al testdir/.backup/
+
 
 backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---

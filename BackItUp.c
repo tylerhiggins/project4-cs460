@@ -12,6 +12,27 @@
 
 #define DEBUG 1
 #define BDIR "testdir/.backup"
+#define MAXTHREADS 1000
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int count = 0;						// shared
+pthread_t threads[MAXTHREADS];		// shared
+
+
+// save the thread id to a list
+void storeThreadID(pthread_t id) {
+	if( pthread_mutex_lock(&mutex) ){
+		printf("Error: mutex_lock reports %s\n", strerror(errno) );
+		exit(1);
+	}
+	if (DEBUG) printf("Storing thread %d, count %d\n", id, count);
+	threads[count] = id;
+	count++;
+	if( pthread_mutex_unlock(&mutex) ){
+			printf("Error: mutex_unlock reports %s\n", strerror(errno) );
+			exit(1);
+		}
+}
 
 void printError(char* error){
 	if( DEBUG ){
@@ -45,10 +66,9 @@ and backs up the file by making a copy
 void * createBackupFile(void *argument) {
 	// load in the struct
 	struct thread_args args = *(struct thread_args*)argument;
-	if (DEBUG) { printf("Thread %d creating backup of: %s\n", pthread_self(), args.filename);}
+	if (DEBUG) { printf("\nThread %d creating backup of: %s\n", pthread_self(), args.filename);}
 
-	//if so, copy the file to the backup directory
-	//open just for reading
+	//open the file just for reading
 	FILE* fp = fopen(args.filename, "r");
 	if( fp == NULL ){
 		printError(strerror(errno));
@@ -72,6 +92,7 @@ void * createBackupFile(void *argument) {
 		canCopy = testSt.st_mtime < args.modifiedTime;
 	}
 
+	// copy the file to the backup directory
 	if( canCopy ){
 		if( exists ){
 			printf("Overwriting outdated backup file.\n");
@@ -81,15 +102,12 @@ void * createBackupFile(void *argument) {
 	}else if( exists ){
 		printf("Backup file is already up-to-date.\n");
 	}
-	
 	fclose(fp);
-
 }
 
 
 // writes a copy of fp to fname
 int copyFile(FILE *fp, char* fname){
-
 	if( DEBUG ){
 		printf("Making copy at %s\n", fname);
 	}
@@ -103,15 +121,13 @@ int copyFile(FILE *fp, char* fname){
 	while( 1 ){
 		char b;
 		int read = fread(&b, 1, 1, fp);
-
 		if( read <= 0 ){
 			break;
 		}
-
 		fwrite(&b, 1, 1, new);
 	}
-
 	fclose(new);
+	if (DEBUG) printf("File copied successfully\n");
 }
 
 int recursiveCopy( char* dname ){
@@ -137,9 +153,11 @@ int recursiveCopy( char* dname ){
 				printError(strerror(errno));
 				return 1;
 			}
+
+			if (DEBUG) printf("Checking file type: %s\n", fname);
 			//check if this is a regular file
 			if( S_ISREG( st.st_mode ) ){
-
+				if (DEBUG) printf("%s is Regular\n", fname);
 				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
 				strncat(dest, ds->d_name, strlen(dest) + strlen(ds->d_name) + 1);
@@ -151,14 +169,22 @@ int recursiveCopy( char* dname ){
 				strncpy(args.destination, dest, strlen(dest));
 				args.modifiedTime = st.st_mtime;
 
+				if (DEBUG) printf("Thread %d spinning up child thread\n", pthread_self());
 				// call the thread
 				pthread_t copy;
-				pthread_create(&copy, NULL, createBackupFile, &args);
-				pthread_join(copy, NULL);
-
+				if (pthread_create(&copy, NULL, createBackupFile, &args) < 0) {
+					printError(strerror(errno));
+					exit(-1);
+				}
+				storeThreadID(copy);
+				if (DEBUG) printf("Thread %d continuing...\n", pthread_self());
+				// pthread_join(copy, NULL);
+				// pthread_detach(copy);
+				// if (DEBUG) printf("detached thread\n");
 			}
 			else if( S_ISDIR( st.st_mode ) ){
-				printf("TODO: skipping directory\n");
+				if (DEBUG) printf("%s is a Directory\n", fname);
+				printf("TODO recurse into Directory: %s\n", fname);
 			}
 		}
 	}
@@ -276,6 +302,34 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 	}
+	
+	// lock because count is a shared variable
+	if( pthread_mutex_lock(&mutex) ){
+		printf("Error: mutex_lock reports %s\n", strerror(errno) );
+		exit(1);
+	}
+	int numThreads = count;
+	if( pthread_mutex_unlock(&mutex) ){
+		printf("Error: mutex_lock reports %s\n", strerror(errno) );
+		exit(1);
+	}
+
+	// join the threads
+	for(int i = 0; i < numThreads; i++) {
+		if( pthread_mutex_lock(&mutex) ){
+			printf("Error: mutex_lock reports %s\n", strerror(errno) );
+			exit(1);
+		}
+		if (DEBUG) printf("Joining thread %ld\n", threads[i]);
+		pthread_join(threads[i], NULL);
+		if( pthread_mutex_unlock(&mutex) ){
+			printf("Error: mutex_lock reports %s\n", strerror(errno) );
+			exit(1);
+		}
+	}
+
+
+	pthread_mutex_destroy(&mutex);
 
 	return 0;
 }
