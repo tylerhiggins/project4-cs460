@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define BDIR "testdir/.backup"
 
 void printError(char* error){
