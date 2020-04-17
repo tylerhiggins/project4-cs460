@@ -4,3 +4,4 @@ BackItUp
 *.swp
 sftp/
 testdir/
+backuptestdir/

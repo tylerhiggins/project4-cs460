@@ -13,6 +13,19 @@
 #define DEBUG 1
 #define BDIR "testdir/.backup"
 
+int totalBytes = 0;
+int successfulFiles = 0;
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+void updateTotalBytes(int b) {
+	pthread_mutex_lock(&lock);
+	totalBytes += b;
+	successfulFiles++;
+
+	pthread_mutex_unlock(&lock);
+}
+
 void printError(char* error){
 	if( DEBUG ){
 		printf("Error: %s\n", error);
@@ -192,10 +205,10 @@ void *restoreThread(void *arg){
 	if(bytes != -1){
 		printf("[thread %d] Copied %d bytes from %s.bak to %s\n", args.threadNum,bytes,
 			filename,filename);
+			updateTotalBytes(bytes);
 	} else {
 		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
 	} 
-	pthread_exit(&bytes);
 }
 int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
@@ -270,9 +283,7 @@ int recursiveRestore( char* dname ){
 				void *ret;
 				pthread_t restoreT;
 				pthread_create(&restoreT,NULL,restoreThread,&args);
-				pthread_join(restoreT,&ret);
-				if ( DEBUG )
-					printf("ret: %d\n", *(int *)ret);
+				pthread_join(restoreT,NULL);
 
 			}else if( DEBUG ){
 				printf("Not restoring newer or up-to-date backup file.\n");
@@ -283,6 +294,8 @@ int recursiveRestore( char* dname ){
 		}
 
 	}
+	printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes);
+	pthread_mutex_destroy(&lock);
 
 }
 
