@@ -299,6 +299,53 @@ int recursiveRestore( char* dname ){
 
 }
 
+// recursively traverse the directory and counts the number of files
+int countFiles(char* dname) {
+	int count = 0;
+	//travel through all directories and copy files
+	// into the same directory structure
+	struct dirent* ds;
+	DIR* dir = opendir(dname);
+	while( (ds = readdir(dir)) != NULL ){
+		//while the next directory is not null
+		if( strncmp( ds->d_name, ".", 1 ) != 0 && strncmp(ds->d_name, "..", 2) != 0 ){
+			//and this is not the current or previous directory structure
+			//check status of object
+			struct stat st;
+			
+			char fname[256] = "";
+			strncat(fname, dname, strlen(fname) + strlen(dname) + 1);
+			strncat( fname, "/", strlen(fname) + 2);
+			strncat(fname, ds->d_name, strlen(fname) + strlen(ds->d_name) + 1);
+
+			//treating symlinks as symlinks, not the files they link to
+			int err = lstat(fname, &st);
+			if( err == -1 ){
+				printf("countFiles %s\n", strerror(errno));
+				return 1;
+			}
+			//check if this is a regular file
+			if( S_ISREG( st.st_mode ) ){
+				count++;
+			}
+			else if( S_ISDIR( st.st_mode ) ){
+				// printf("Entering directory %s\n", fname);
+				count += countFiles(fname);
+			}
+		}
+	}
+	closedir(dir);
+	return count;
+}
+
+// // // JOIN threads list
+// void joinThreads(int count) {
+// 	for (int i = 0; i < count; count++) {
+// 		if (DEBUG) printf("[thread %d] is joining\n", i);
+// 		pthread_join(threadList[i], NULL);
+// 	}
+
+// }
 
 int main(int argc, char **argv) {
 
