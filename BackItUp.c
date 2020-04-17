@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define BDIR "testdir/.backup"
 
 void printError(char* error){
@@ -181,18 +181,21 @@ void *restoreThread(void *arg){
 	char *filename = NULL;
 	char *tmp;
 	char *rest = destination;
+	// Grabbing just the filename from the path
 	while((tmp = strtok_r(rest,"/",&rest))){
 		filename = tmp;
 	}
+	// Before copy
 	printf("[thread %d] Backing up %s\n",args.threadNum,filename);
 	int bytes = copyFile(args.fileToRestore,args.destination);
+	// If successful, display message, else display error
 	if(bytes != -1){
 		printf("[thread %d] Copied %d bytes from %s.bak to %s\n", args.threadNum,bytes,
 			filename,filename);
 	} else {
 		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
 	} 
-
+	pthread_exit(&bytes);
 }
 int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
@@ -264,9 +267,12 @@ int recursiveRestore( char* dname ){
 				}
 				num_threads++;
 				args.threadNum = num_threads;
+				void *ret;
 				pthread_t restoreT;
 				pthread_create(&restoreT,NULL,restoreThread,&args);
-				pthread_join(restoreT,NULL);
+				pthread_join(restoreT,&ret);
+				if ( DEBUG )
+					printf("ret: %d\n", *(int *)ret);
 
 			}else if( DEBUG ){
 				printf("Not restoring newer or up-to-date backup file.\n");
