@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define BDIR "testdir/.backup"
 
 // shared variables
@@ -27,7 +27,7 @@ int createBackupDir(){
 	int err = mkdir(BDIR, 0777);
 	if( err == -1 ){
 		if( errno == EEXIST ){
-			printf("Backup directory already exists.\n");
+			if (DEBUG) printf("Backup directory already exists.\n");
 			return 0;
 		}else{
 			printError(strerror(errno));
@@ -46,10 +46,11 @@ This method is handed off to a thread,
 opens the original file for reading
 and backs up the file by making a copy
 */
-void * createBackupFile(void *argument) {
+void * backupThread(void *argument) {
+	int bytes_copied = 0;
 	// load in the struct
 	struct thread_args args = *(struct thread_args*)argument;
-	if (DEBUG) { printf("Thread %d creating backup of: %s\n", pthread_self(), args.filename);}
+	printf("[thread %d] Backing up %s\n", args.threadNumber, args.filename);
 
 	//if so, copy the file to the backup directory
 	//open just for reading
@@ -63,9 +64,9 @@ void * createBackupFile(void *argument) {
 	int exists = access( args.destination, F_OK ) != -1;
 	int canCopy = 1;
 	if( exists ){
-		if( DEBUG ){
-			printf("Backup file already exists, checking modification times.\n");
-		}
+		// if( DEBUG ){
+		// 	printf("Backup file already exists, checking modification times.\n");
+		// }
 		struct stat testSt;
 		int err = lstat(args.destination, &testSt);
 		if( err == -1 ){
@@ -78,22 +79,24 @@ void * createBackupFile(void *argument) {
 
 	if( canCopy ){
 		if( exists ){
-			printf("Overwriting outdated backup file.\n");
+			printf("[thread %d] WARNING: Overwriting %s\n", args.threadNumber, args.destination);
 		}
 		if (DEBUG) { printf("Copying file: %s to %s\n", args.filename, args.destination);}
-		copyFile(fp, args.destination);	
+		bytes_copied = copyFile(fp, args.destination);	
+		printf("[thread %d] Copied %d bytes from %s to %s\n", args.threadNumber, bytes_copied, args.filename, args.destination);
+
 	}else if( exists ){
-		printf("Backup file is already up-to-date.\n");
+		printf("[thread %d] NOTICE: %s is already the most current version\n", args.threadNumber, args.filename);
 	}
 	
 	fclose(fp);
-
+	// return bytes_copied;		// TODo this with pthread_exit I think
 }
 
 
 // writes a copy of fp to fname
 int copyFile(FILE *fp, char* fname){
-
+	int bytes_copied = 0;
 	if( DEBUG ){
 		printf("Making copy at %s\n", fname);
 	}
@@ -113,9 +116,11 @@ int copyFile(FILE *fp, char* fname){
 		}
 
 		fwrite(&b, 1, 1, new);
+		bytes_copied++;
 	}
 
 	fclose(new);
+	return bytes_copied;
 }
 
 int recursiveCopy( char* dname ){
@@ -170,7 +175,7 @@ int recursiveCopy( char* dname ){
 
 				// call the thread
 				pthread_t copy;
-				pthread_create(&copy, NULL, createBackupFile, &args);
+				pthread_create(&copy, NULL, backupThread, &args);
 				pthread_join(copy, NULL);
 
 			}

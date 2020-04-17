@@ -26,6 +26,10 @@ backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---
 	./${BACKITUP}
 
+# delete .backup
+remove:
+	rm -r testdir/.backup
+
 # deletes unneccessary files
 clean:
 	rm -f ${BACKITUP} ${}.o  *.o *.tgz *.zip

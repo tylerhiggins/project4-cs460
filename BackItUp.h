@@ -17,6 +17,6 @@ int copyFile(FILE* fp, char* fname);
 
 int recursiveCopy(char* dname);
 
-void * createBackupFile(void *argument);
+void * backupThread(void *argument);
 
 #endif
