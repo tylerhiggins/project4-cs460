@@ -13,6 +13,10 @@
 #define DEBUG 1
 #define BDIR "testdir/.backup"
 
+// shared variables
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int counter = 0;		// keeps track of thread count
+
 void printError(char* error){
 	if( DEBUG ){
 		printf("Error: %s\n", error);
@@ -150,6 +154,19 @@ int recursiveCopy( char* dname ){
 				strncpy(args.filename, fname, strlen(fname));
 				strncpy(args.destination, dest, strlen(dest));
 				args.modifiedTime = st.st_mtime;
+				// increment count of thread
+				if (pthread_mutex_lock(&mutex)) {
+					printf("Error: mutex_lock reports %s\n", strerror(errno));
+					exit(1);
+				}
+				if (DEBUG) printf("Obtained the lock\n");
+				counter++;
+				args.threadNumber = counter;
+				if (DEBUG) printf("Released the lock\n");
+				if (pthread_mutex_unlock(&mutex)) {
+					printf("Error: mutex_lock reports %s\n", strerror(errno) );
+					exit(1);
+				}
 
 				// call the thread
 				pthread_t copy;

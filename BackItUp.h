@@ -3,6 +3,7 @@
 #define BACKITUP_H
 
 struct thread_args {
+    int threadNumber;
     time_t modifiedTime;
     char filename[256];
     char destination[256];
