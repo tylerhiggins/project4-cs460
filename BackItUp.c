@@ -346,14 +346,14 @@ int countFiles(char* dname) {
 	return count;
 }
 
-// // // JOIN threads list
-// void joinThreads(int count) {
-// 	for (int i = 0; i < count; i++) {
-// 		if (DEBUG) printf("[thread %d] is joining\n", i);
-// 		pthread_join(threadList[i], NULL);
-// 	}
+// JOIN threads list
+void joinThreads(int count) {
+	for (int i = 0; i < count; i++) {
+		if (DEBUG) printf("[thread %d] is joining\n", i);
+		pthread_join(threadList[i], NULL);
+	}
 
-// }
+}
 
 int main(int argc, char **argv) {
 	int num = 0;
