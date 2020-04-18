@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define BDIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -49,7 +49,7 @@ int createBackupDir(){
 	int err = mkdir(BDIR, 0777);
 	if( err == -1 ){
 		if( errno == EEXIST ){
-			printf("Backup directory already exists.\n");
+			printf("[  main  ] Backup directory already exists.\n");
 			return 0;
 		}else{
 			perror("createBackupDir");
@@ -81,13 +81,13 @@ void * createBackupFile(void *argument) {
 		perror("createBackupFile");
 		exit(-1);
 	}
-	if (DEBUG) { printf("Opened file: %s\n", args.filename );}
+	if (DEBUG) { printf("[thread %d] Opened file: %s\n", args.threadNum, args.filename );}
 
 	int exists = access( args.destination, F_OK ) != -1;
 	int canCopy = 1;
 	if( exists ){
 		if( DEBUG ){
-			printf("Backup file already exists, checking modification times.\n");
+			printf("[thread %d] Backup file already exists, checking modification times.\n", args.threadNum);
 		}
 		struct stat testSt;
 		int err = lstat(args.destination, &testSt);
@@ -151,7 +151,7 @@ int recursiveCopy( char* dname ){
 	int num_threads = 0;
 	int num_files = 0;
 	num_files = countFiles(dname);
-	printf("counted %d files\n", num_files);
+	if (DEBUG) printf("[  main  ] counted %d files\n", num_files);
 	pthread_t thread_list[num_files];
 	// pthread_t *thread_list;
 	// thread_list = (pthread_t*) malloc(sizeof(pthread_t) * num_files);
@@ -192,7 +192,7 @@ int recursiveCopy( char* dname ){
 				args.modifiedTime = st.st_mtime;
 				num_threads++;
 				args.threadNum = total_threads;
-				printf("[main    ] creating thread %d to copy %s\n", total_threads, args.filename);
+				if (DEBUG) printf("[  main  ] creating thread %d to copy %s\n", total_threads, args.filename);
 				total_threads++;
 				// call the thread
 				pthread_t copy;
@@ -211,7 +211,7 @@ int recursiveCopy( char* dname ){
 
 			}
 			else if( S_ISDIR( st.st_mode ) ){
-				printf("[main    ] TODO: skipping directory '%s'\n", fname);
+				if (DEBUG) printf("[  main  ] TODO: skipping directory '%s'\n", fname);
 			}
 		}
 	}
@@ -411,7 +411,7 @@ int main(int argc, char **argv) {
 
 	if( restore ){
 		if( DEBUG ){
-			printf("Restoring from backup.\n");
+			printf("[  main  ] Restoring from backup.\n");
 		}
 		// num = countFiles(restoreDirectory);
 		// threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
@@ -432,7 +432,7 @@ int main(int argc, char **argv) {
 	// joinThreads(num);
 	// free(threadList);
 
-	printf("Success\n");
+	printf("[  main  ] Success\n");
 	return 0;
 }
 
