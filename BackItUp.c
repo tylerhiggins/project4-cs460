@@ -56,9 +56,10 @@ opens the original file for reading
 and backs up the file by making a copy
 */
 void * createBackupFile(void *argument) {
+	int bytes = 0;
 	// load in the struct
 	struct thread_args args = *(struct thread_args*)argument;
-	if (DEBUG) { printf("Thread %ld creating backup of: %s\n", pthread_self(), args.filename);}
+	printf("[thread %d] Backing up %s\n", args.threadNum, args.filename);
 
 	//if so, copy the file to the backup directory
 	//open just for reading
@@ -87,10 +88,11 @@ void * createBackupFile(void *argument) {
 
 	if( canCopy ){
 		if( exists ){
-			printf("Overwriting outdated backup file.\n");
+			printf("[thread %d] WARNING: Overwriting %s\n", args.threadNum, args.filename);
 		}
 		if (DEBUG) { printf("Copying file: %s to %s\n", args.filename, args.destination);}
-		copyFile(fp, args.destination);	
+		bytes = copyFile(fp, args.destination);	
+		printf("[thread %d] Copied %d bytes from %s to %s\n", args.threadNum, bytes, args.filename, args.destination);
 	}else if( exists ){
 		printf("Backup file is already up-to-date.\n");
 	}
@@ -132,6 +134,7 @@ int copyFile(FILE *fp, char* fname){
 int recursiveCopy( char* dname ){
 	//travel through all directories and copy files
 	// into the same directory structure
+	int num_threads = 0;
 	struct dirent* ds;
 	DIR* dir = opendir(dname);
 	while( (ds = readdir(dir)) != NULL ){
@@ -142,9 +145,9 @@ int recursiveCopy( char* dname ){
 			struct stat st;
 			
 			char fname[256] = "";
-			strncat(fname, dname, strlen(fname) + strlen(dname) + 1);
-			strncat( fname, "/", strlen(fname) + 2);
-			strncat(fname, ds->d_name, strlen(fname) + strlen(ds->d_name) + 1);
+			strncat(fname, dname, strlen(dname));
+			strcat( fname, "/");
+			strncat(fname, ds->d_name, strlen(ds->d_name));
 
 			//treating symlinks as symlinks, not the files they link to
 			int err = lstat(fname, &st);
@@ -157,14 +160,25 @@ int recursiveCopy( char* dname ){
 
 				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
-				strncat(dest, ds->d_name, strlen(dest) + strlen(ds->d_name) + 1);
-				strncat(dest, ".bak", strlen(dest) + strlen(".bak") + 1);
+				strncat(dest, ds->d_name, strlen(ds->d_name));
+				strcat(dest, ".bak");
 
 				// store variables in struct to avoid sharing memory
 				struct thread_args args;
-				strncpy(args.filename, fname, strlen(fname));
-				strncpy(args.destination, dest, strlen(dest));
+
+				printf("fname: '%s', len: %d\n", fname, strlen(fname));
+				printf("dname: '%s', len: %d\n", dest, strlen(dest));
+				
+				strncpy(args.filename, fname, strlen(fname) + 1);
+				strncpy(args.destination, dest, strlen(dest) + 1);
+
+				printf("args.filename: '%s', len: %d\n", args.filename, strlen(args.filename));
+				printf("args.destination: '%s', len: %d\n", args.destination, strlen(args.destination));
+
+
 				args.modifiedTime = st.st_mtime;
+				num_threads++;
+				args.threadNum = num_threads;
 
 				// call the thread
 				pthread_t copy;

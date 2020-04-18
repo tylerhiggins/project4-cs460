@@ -21,10 +21,15 @@ c.o:
 valgrind: clean all
 	valgrind --leak-check=full ./${BACKITUP}
 
-
 backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---
 	./${BACKITUP}
+
+tree:
+	tree -a testdir/
+
+rm: 
+	rm -r testdir/.backup
 
 # deletes unneccessary files
 clean:

@@ -6,6 +6,7 @@ struct thread_args {
     time_t modifiedTime;
     char filename[256];
     char destination[256];
+    int threadNum;
 };
 
 struct restore_args {
