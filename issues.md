@@ -3,6 +3,7 @@
 [7] Modify program to work recursively on directories
 [8] Test backing up large files, csv, and image files
 [9] Make sure the restoreThread closes the FP
+[10] Make sure the recursiveRestore closes the backupDir
 
 ## Tests ##
 

@@ -7,6 +7,7 @@
 #define NAME_MAX 255
 
 typedef struct copy_args node;
+typedef struct restore_args restore_node;
 
 typedef struct copy_args {
     int root;
@@ -17,12 +18,13 @@ typedef struct copy_args {
     node *next;
 } copy_args;
 
-struct restore_args {
+typedef struct restore_args {
     FILE *fileToRestore;
     char destination[PATH_MAX];
     int threadNum;
+    restore_node *next;
+} restore_args;
 
-};
 void printError(char* error);
 
 int createBackupDir();
@@ -41,7 +43,8 @@ int countFiles(char* dname);
 
 void printLinkedList(copy_args *root);
 
-void traverseList(copy_args *root, int count, char* method);
+void traverseCopyList(copy_args *root, int count);
+void traverseRestoreList(restore_args *root, int count);
 
 void freeNodes(copy_args *root);
 
