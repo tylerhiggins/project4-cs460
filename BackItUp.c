@@ -165,16 +165,9 @@ int recursiveCopy( char* dname ){
 
 				// store variables in struct to avoid sharing memory
 				struct thread_args args;
-
-				printf("fname: '%s', len: %d\n", fname, strlen(fname));
-				printf("dname: '%s', len: %d\n", dest, strlen(dest));
 				
 				strncpy(args.filename, fname, strlen(fname) + 1);
 				strncpy(args.destination, dest, strlen(dest) + 1);
-
-				printf("args.filename: '%s', len: %d\n", args.filename, strlen(args.filename));
-				printf("args.destination: '%s', len: %d\n", args.destination, strlen(args.destination));
-
 
 				args.modifiedTime = st.st_mtime;
 				num_threads++;
