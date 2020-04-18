@@ -347,7 +347,7 @@ int countFiles(char* dname) {
 
 // // // JOIN threads list
 // void joinThreads(int count) {
-// 	for (int i = 0; i < count; count++) {
+// 	for (int i = 0; i < count; i++) {
 // 		if (DEBUG) printf("[thread %d] is joining\n", i);
 // 		pthread_join(threadList[i], NULL);
 // 	}
@@ -355,6 +355,8 @@ int countFiles(char* dname) {
 // }
 
 int main(int argc, char **argv) {
+
+	int num = countFiles("testdir");
 
 	int restore = 0;
 	for( int i = 0; i < argc; i++ ){
