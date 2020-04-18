@@ -204,13 +204,13 @@ int recursiveCopy( char* dname ){
 				total_threads++;
 				i++;
 
-				printf("\t%d\n", current->threadNum);
-				printf("\t%d\n", current->modifiedTime);
-				printf("\t%s\n", current->filename);
-				printf("\t%s\n", current->destination);
+				// printf("\t%d\n", current->threadNum);
+				// printf("\t%d\n", current->modifiedTime);
+				// printf("\t%s\n", current->filename);
+				// printf("\t%s\n", current->destination);
 
 				previous->next = current;
-				current = previous;
+				previous = current;
 
 			}
 			else if( S_ISDIR( st.st_mode ) ){
