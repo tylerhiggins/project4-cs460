@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define BDIR "testdir/.backup"
 
 int totalBytes = 0;
@@ -94,11 +94,11 @@ void * createBackupFile(void *argument) {
 		bytes = copyFile(fp, args.destination);	
 		printf("[thread %d] Copied %d bytes from %s to %s\n", args.threadNum, bytes, args.filename, args.destination);
 	}else if( exists ){
-		printf("Backup file is already up-to-date.\n");
+		printf("[thread %d] NOTICE: %s is already the most current version\n", args.threadNum, args.filename);
 	}
 	
 	fclose(fp);
-
+	pthread_exit(NULL);
 }
 
 
@@ -166,15 +166,8 @@ int recursiveCopy( char* dname ){
 				// store variables in struct to avoid sharing memory
 				struct thread_args args;
 
-				printf("fname: '%s', len: %d\n", fname, strlen(fname));
-				printf("dname: '%s', len: %d\n", dest, strlen(dest));
-				
 				strncpy(args.filename, fname, strlen(fname) + 1);
 				strncpy(args.destination, dest, strlen(dest) + 1);
-
-				printf("args.filename: '%s', len: %d\n", args.filename, strlen(args.filename));
-				printf("args.destination: '%s', len: %d\n", args.destination, strlen(args.destination));
-
 
 				args.modifiedTime = st.st_mtime;
 				num_threads++;
