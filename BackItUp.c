@@ -18,6 +18,7 @@ int successfulFiles = 0;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_t *threadList;
+int thread_count = 0;
 
 void updateTotalBytes(int b) {
 	pthread_mutex_lock(&lock);
@@ -178,6 +179,8 @@ int recursiveCopy( char* dname ){
 				pthread_t copy;
 				pthread_create(&copy, NULL, createBackupFile, &args);
 				pthread_join(copy, NULL);
+				// threadList[thread_count] = copy;
+				// thread_count++;
 
 			}
 			else if( S_ISDIR( st.st_mode ) ){
@@ -194,6 +197,8 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 	strncat(result, fileName, strlen(fileName)-4);
 	return 0;
 }
+
+
 void *restoreThread(void *arg){
 
 	struct restore_args args = *(struct restore_args*)arg;
@@ -218,6 +223,8 @@ void *restoreThread(void *arg){
 		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
 	} 
 }
+
+
 int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
 	// backup directory to the main directory
