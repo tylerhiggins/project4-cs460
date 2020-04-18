@@ -41,6 +41,8 @@ copy_args** initStructList();
 
 void doubleListSize(copy_args* struct_list);
 
-void printStructList(copy_args *struct_list, int count);
+void printStructList(copy_args **struct_list, int count);
+
+void traverseList(copy_args *root);
 
 #endif

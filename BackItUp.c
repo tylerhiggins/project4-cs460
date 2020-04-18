@@ -157,7 +157,8 @@ int recursiveCopy( char* dname ){
 	if (root == NULL) {
 		perror("recursiveCopy");
 	}
-	root->root = 1;
+	// root->root = 1;
+	copy_args *previous = root;
 
 	int i = 0;
 
@@ -186,6 +187,7 @@ int recursiveCopy( char* dname ){
 			if( S_ISREG( st.st_mode ) ){
 
 				copy_args *current = (copy_args *) malloc(sizeof(copy_args));	
+				current->next = NULL;
 
 				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
@@ -197,15 +199,19 @@ int recursiveCopy( char* dname ){
 				// store variables in struct to avoid sharing memory
 				strncpy(current->filename, fname, strlen(fname) + 1);
 				strncpy(current->destination, dest, strlen(dest) + 1);
-				printf(current->destination);
 				current->modifiedTime = st.st_mtime;
 				current->threadNum = total_threads;
 				total_threads++;
 				i++;
+
 				printf("\t%d\n", current->threadNum);
 				printf("\t%d\n", current->modifiedTime);
 				printf("\t%s\n", current->filename);
 				printf("\t%s\n", current->destination);
+
+				previous->next = current;
+				current = previous;
+
 			}
 			else if( S_ISDIR( st.st_mode ) ){
 				if (DEBUG) printf("[  main  ] TODO: skipping directory '%s'\n", fname);
@@ -215,11 +221,27 @@ int recursiveCopy( char* dname ){
 	closedir(dir);
 
 	// run the threads
+	traverseList(root);
 
 	// join the threads
-	// printStructList(arg_list, i);
+	// printStructList(root, i);
 	free(root);
 
+
+}
+
+
+void traverseList(copy_args *root) {
+	copy_args *current;
+	current = root;
+	while(current != NULL) {
+		printf("Traversing List\n");
+		printf("\t%d\n", current->threadNum);
+		printf("\t%d\n", current->modifiedTime);
+		printf("\t%s\n", current->filename);
+		printf("\t%s\n", current->destination);
+		current = current->next;
+	}
 
 }
 
@@ -242,9 +264,13 @@ void doubleListSize(copy_args *struct_list) {
 	
 }
 
-void printStructList(copy_args *struct_list, int count) {
+void printStructList(copy_args **struct_list, int count) {
 	for (int i = 0; i < count; i++) {
-		printf("Struct %d\t\n%d\t\n%s\t\n%s\t\n%s", struct_list[i].threadNum, struct_list[i].modifiedTime, struct_list[i].filename, struct_list[i].destination);
+		printf("i: %d\n", i);
+		printf("\t%d\n", &struct_list[i]->threadNum);
+		printf("\t%d\n", &struct_list[i]->modifiedTime);
+		printf("\t%s\n", &struct_list[i]->filename);
+		printf("\t%s\n", &struct_list[i]->destination);
 	}
 }
 
