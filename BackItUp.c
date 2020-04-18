@@ -32,14 +32,14 @@ void updateTotalBytes(int b) {
 /*
 Updates the thread count and stores the threads number
 */
-void updateThreadCount(struct thread_args args) {
+void updateThreadCount(struct copy_args args) {
 	pthread_mutex_lock(&lock);
 	args.threadNum = total_threads;
 	total_threads++;
 	pthread_mutex_unlock(&lock);
 }
 
-void printError(char* error){
+void printError(char* error){ 
 	if( DEBUG ){
 		printf("Error: %s\n", error);
 	}
@@ -71,7 +71,7 @@ and backs up the file by making a copy
 void * createBackupFile(void *argument) {
 	int bytes = 0;
 	// load in the struct
-	struct thread_args args = *(struct thread_args*)argument;
+	struct copy_args args = *(struct copy_args*)argument;
 	printf("[thread %d] Backing up %s\n", args.threadNum, args.filename);
 
 	//if so, copy the file to the backup directory
@@ -153,13 +153,18 @@ int recursiveCopy( char* dname ){
 	int num_files = 0;
 	num_files = countFiles(dname);
 	if (DEBUG) printf("[  main  ] counted %d files\n", num_files);
-	pthread_t thread_list[num_files];
-	// pthread_t *thread_list;
-	// thread_list = (pthread_t*) malloc(sizeof(pthread_t) * num_files);
+	copy_args *root = (copy_args *) malloc(sizeof(copy_args));	
+	if (root == NULL) {
+		perror("recursiveCopy");
+	}
+	root->root = 1;
+
+	int i = 0;
 
 	struct dirent* ds;
 	DIR* dir = opendir(dname);
 	while( (ds = readdir(dir)) != NULL ){
+
 		//while the next directory is not null
 		if( strncmp( ds->d_name, ".", 1 ) != 0 && strncmp(ds->d_name, "..", 2) != 0 ){
 			//and this is not the current or previous directory structure
@@ -180,36 +185,27 @@ int recursiveCopy( char* dname ){
 			//check if this is a regular file
 			if( S_ISREG( st.st_mode ) ){
 
+				copy_args *current = (copy_args *) malloc(sizeof(copy_args));	
+
 				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
 				strncat(dest, ds->d_name, strlen(ds->d_name));
 				strcat(dest, ".bak");
 
+				printf("Found: %s\n", fname);
+				
 				// store variables in struct to avoid sharing memory
-				struct thread_args args;
-
-				strncpy(args.filename, fname, strlen(fname) + 1);
-				strncpy(args.destination, dest, strlen(dest) + 1);
-				args.modifiedTime = st.st_mtime;
-				num_threads++;
-				args.threadNum = total_threads;
-				if (DEBUG) printf("[  main  ] creating thread %d to copy %s\n", total_threads, args.filename);
+				strncpy(current->filename, fname, strlen(fname) + 1);
+				strncpy(current->destination, dest, strlen(dest) + 1);
+				printf(current->destination);
+				current->modifiedTime = st.st_mtime;
+				current->threadNum = total_threads;
 				total_threads++;
-				// call the thread
-				pthread_t copy;
-				pthread_create(&copy, NULL, createBackupFile, &args);
-				// thread_list[num_threads] = copy;
-				pthread_create(&thread_list[num_threads-1], NULL, createBackupFile, &args);
-
-				pthread_join(copy, NULL);
-				// printf("thread %d joined\n", num_threads);
-				// threadList[thread_count] = copy;
-				// thread_count++;
-				// updateThreadCount(args);
-				// printf("[thread %d] created\n", args.threadNum);
-				// pthread_create(&thread_list[num_threads], NULL, createBackupFile, &args);
-				// num_threads++;
-
+				i++;
+				printf("\t%d\n", current->threadNum);
+				printf("\t%d\n", current->modifiedTime);
+				printf("\t%s\n", current->filename);
+				printf("\t%s\n", current->destination);
 			}
 			else if( S_ISDIR( st.st_mode ) ){
 				if (DEBUG) printf("[  main  ] TODO: skipping directory '%s'\n", fname);
@@ -217,12 +213,41 @@ int recursiveCopy( char* dname ){
 		}
 	}
 	closedir(dir);
-	// printf("[main 0] joining %d threads\n", num_threads);
-	// joinThreads(thread_list, num_threads);
-	// printf("[main 0] finished joining threads %d\n", num_threads);
-	// printf("Freeing thread_list\n");
-	// free(thread_list);
+
+	// run the threads
+
+	// join the threads
+	// printStructList(arg_list, i);
+	free(root);
+
+
 }
+
+// // TODO error check
+// copy_args** initStructList() {
+// 	int num = 16;
+// 	copy_args **arg_list = (copy_args**) malloc(sizeof(copy_args) * num);	
+// 	for (int i = 0; i < num; i++) {
+// 		// array[i] = (copy_args*) malloc(sizeof(copy_args));
+// 		current->filename = malloc(PATH_MAX);
+// 		current->destination = malloc(PATH_MAX);
+// 		current->modifiedTime = (time_t) malloc(sizeof(time_t));
+// 		current->threadNum = (int) malloc(sizeof(int));
+// 	}
+// 	return arg_list;
+// }
+
+
+void doubleListSize(copy_args *struct_list) {
+	
+}
+
+void printStructList(copy_args *struct_list, int count) {
+	for (int i = 0; i < count; i++) {
+		printf("Struct %d\t\n%d\t\n%s\t\n%s\t\n%s", struct_list[i].threadNum, struct_list[i].modifiedTime, struct_list[i].filename, struct_list[i].destination);
+	}
+}
+
 
 int backupToMainPath( char* result, char* dirName, char* fileName ){
 	//assume the file name has a .bak extension
