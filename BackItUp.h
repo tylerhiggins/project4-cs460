@@ -25,4 +25,8 @@ int recursiveCopy(char* dname);
 
 void * createBackupFile(void *argument);
 
+void joinThreads(pthread_t *thread_list, int count);
+
+int countFiles(char* dname);
+
 #endif

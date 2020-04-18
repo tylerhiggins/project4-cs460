@@ -1,6 +1,8 @@
 # TODO #
 
 [7] Modify program to work recursively on directories
+[8] Test backing up large files, csv, and image files
+
 ## Tests ##
 
 # Issues In Progress #
