@@ -25,11 +25,17 @@ backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---
 	./${BACKITUP}
 
+restore: all
+	././${BACKITUP} -r
+	
 tree:
 	tree -a testdir/
 
 rm: 
 	rm -r testdir/.backup
+
+r: 
+	rm testdir/a testdir/b
 
 # deletes unneccessary files
 clean:

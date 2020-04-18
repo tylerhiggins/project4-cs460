@@ -119,9 +119,8 @@ void * backupThread(void *argument) {
 // writes a copy of fp to fname
 int copyFile(FILE *fp, char* fname){
 	int bytes_copied = 0;
-	if( DEBUG ){
-		printf("[thread %d] Making copy at %s\n", pthread_self(), fname);
-	}
+
+	if (DEBUG) printf("[thread _] copying %s\n", fname);
 
 	//create a new file for writing
 	FILE *new = fopen(fname, "w+");
@@ -236,10 +235,8 @@ void traverseCopyList(copy_args *root, int count) {
 		total++;
 		free_me = current;
 		current = current->next;
-		free(free_me);
-		
+		free(free_me);	
 	}
-
 	int thread = 0;
 	for (int i = 0; i < total; i++) {
 		pthread_join(thread_list[i], NULL);
@@ -259,11 +256,13 @@ void traverseRestoreList(restore_args *root, int count) {
 	// create threads
 	while(current != NULL) {
 		// backup files
+		printf("Passing...\n");
+		printf("\tthreadNum: %d\n", current->threadNum);
+		printf("\tdestination: %s\n", current->destination);
 		pthread_create(&thread_list[total], NULL, restoreThread, current);
 		total++;
 		free_me = current;
 		current = current->next;
-		free(free_me);
 		
 	}
 
@@ -271,7 +270,6 @@ void traverseRestoreList(restore_args *root, int count) {
 	for (int i = 0; i < total; i++) {
 		pthread_join(thread_list[i], NULL);
 		if (DEBUG) printf("[  main  ] Joined thread %d of %d\n", i, total-1);
-
 	}
 
 }
@@ -287,7 +285,7 @@ void printCopyLinkedList(copy_args *root) {
 	current = root->next;
 	int count = 0;
 	while(current != NULL) {
-		printf("Traversing List\n");
+		printf("\t----\n");
 		printf("\t%d\n", current->threadNum);
 		printf("\t%d\n", current->modifiedTime);
 		printf("\t%s\n", current->filename);
@@ -297,31 +295,32 @@ void printCopyLinkedList(copy_args *root) {
 
 }
 
+// does not free root
+void freeRestoreLinkedList(restore_args *root) {
+	restore_args *current;
+	restore_args *free_me;
+	current = root->next;
+	int count = 0;
+	while(current != NULL) {
+		free_me = current;
+		current = current->next;
+		free(free_me);
+	}
+}
 
 void printRestoreLinkedList(restore_args *root) {
+	printf("[  main  ] Printing Restore Linked List\n");
 	restore_args *current;
 	current = root->next;
 	int count = 0;
 	while(current != NULL) {
-		printf("Traversing List\n");
-		printf("\t%d\n", current->threadNum);
-		printf("\t%d\n", current->destination);
+		printf("\t----\n");
+		printf("\tthreadNum: %d\n", current->threadNum);
+		printf("\tdestination: %s\n", current->destination);
 		current = current->next;
+		count++;
 	}
-
 }
-
-// void freeNodes(copy_args *root) {
-// 	copy_args *current;
-// 	copy_args *next;
-// 	current = root->next;
-// 	free(root);
-// 	while(current != NULL) {
-// 		next = current->next;
-// 		free(current);
-// 	}
-
-// }
 
 
 int backupToMainPath( char* result, char* dirName, char* fileName ){
@@ -331,9 +330,11 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 	return 0;
 }
 
-
+/*
+	struct copy_args args = *(struct copy_args*)argument;
+	printf("[thread %d] Backing up %s\n", args.threadNum, args.filename);
+*/
 void *restoreThread(void *arg) {
-
 	struct restore_args args = *(struct restore_args*)arg;
 	char destination[256];
 	strncpy(destination,args.destination,strlen(args.destination));
@@ -345,8 +346,8 @@ void *restoreThread(void *arg) {
 		filename = tmp;
 	}
 	// Before copy
-	printf("[thread %d] Backing up %s\n",args.threadNum,filename);
-	int bytes = copyFile(args.fileToRestore,args.destination);
+	printf("[thread %d] Restoring up %s\n",args.threadNum, args.destination);
+	int bytes = copyFile(args.fileToRestore, args.destination);
 	// If successful, display message, else display error
 	if(bytes != -1){
 		printf("[thread %d] Copied %d bytes from %s.bak to %s\n", args.threadNum,bytes,
@@ -395,7 +396,7 @@ int recursiveRestore( char* dname ){
 		//check if it is a regular file
 		if( S_ISREG( backup.st_mode ) ){
 			if( DEBUG ){
-				printf("Working on file %s\n", fname);
+				printf("[  main  ] Working on file %s\n", fname);
 			}
 			//copy the regular file to the main directory
 			//check if the file already exists and/or is newer than the backup
@@ -418,10 +419,9 @@ int recursiveRestore( char* dname ){
 
 			if( canCopy ){
 				if( DEBUG ){
-					printf("Restoring file.\n");
+					printf("[  main  ] Restoring file.\n");
 				}
 				//perform the copy
-				// struct restore_args args;
 				// init current node
 				restore_args *current = (restore_args *) malloc(sizeof(restore_args));	
 				current->next = NULL;
@@ -433,12 +433,12 @@ int recursiveRestore( char* dname ){
 					return 1;
 				}
 				current->fileToRestore = fp;
-				strncpy(current->destination,newDest,strlen(newDest));
+				strncpy(current->destination, newDest, strlen(newDest) + 1);
 				if(DEBUG){
-					printf("current->destination: %s\n",current->destination);
+					printf("[  main  ] newDest: %s\n", newDest);
+					printf("[  main  ] current->destination: %s\n", current->destination);
 				}
 				// num_threads++;
-				// current->threadNum = num_threads;
 				total_threads++;
 				i++;
 				current->threadNum = total_threads;
@@ -446,11 +446,6 @@ int recursiveRestore( char* dname ){
 				// connect linked list pointers
 				previous->next = current;
 				previous = current;
-
-				// void *ret;
-				// pthread_t restoreT;
-				// pthread_create(&restoreT,NULL,restoreThread,&args);
-				// pthread_join(restoreT,NULL);
 
 			}else if( DEBUG ){
 				printf("Not restoring newer or up-to-date backup file.\n");
@@ -461,7 +456,12 @@ int recursiveRestore( char* dname ){
 		}
 
 	}
+	if (DEBUG) printRestoreLinkedList(root);
 	traverseRestoreList(root, i);
+	// freeRestoreLinkedList(root);
+	// free(root);
+
+	// TODO mutex lock
 	printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes);
 	
 
