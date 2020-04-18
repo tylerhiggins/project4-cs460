@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define BDIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -105,6 +105,7 @@ void * createBackupFile(void *argument) {
 		}
 		if (DEBUG) { printf("Copying file: %s to %s\n", args.filename, args.destination);}
 		bytes = copyFile(fp, args.destination);	
+		updateTotalBytes(bytes);
 		printf("[thread %d] Copied %d bytes from %s to %s\n", args.threadNum, bytes, args.filename, args.destination);
 	}else if( exists ){
 		printf("[thread %d] NOTICE: %s is already the most current version\n", args.threadNum, args.filename);
@@ -119,7 +120,7 @@ void * createBackupFile(void *argument) {
 int copyFile(FILE *fp, char* fname){
 	int bytes_copied = 0;
 	if( DEBUG ){
-		printf("Making copy at %s\n", fname);
+		printf("[thread %d] Making copy at %s\n", pthread_self(), fname);
 	}
 
 	//create a new file for writing
@@ -200,7 +201,7 @@ int recursiveCopy( char* dname ){
 				// thread_list[num_threads] = copy;
 				pthread_create(&thread_list[num_threads-1], NULL, createBackupFile, &args);
 
-				// pthread_join(copy, NULL);
+				pthread_join(copy, NULL);
 				// printf("thread %d joined\n", num_threads);
 				// threadList[thread_count] = copy;
 				// thread_count++;
