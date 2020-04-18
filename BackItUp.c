@@ -214,14 +214,10 @@ int recursiveCopy( char* dname ){
 	}
 	closedir(dir);
 
-	// run the threads
+	// run the threads, free the memory
 	traverseList(root, i, "copy");
-
-	// join the threads
-	// printStructList(root, i);
+	// freeNodes(root);
 	free(root);
-
-
 }
 
 
@@ -229,9 +225,11 @@ int recursiveCopy( char* dname ){
 Traverses the linked list
 Skips root as it expects root to only hold a pointer 
 to the starting node
+Frees the memory of all
 */
 void traverseList(copy_args *root, int count, char* method) {
 	copy_args *current;
+	copy_args *free_me;
 	current = root->next;
 	pthread_t thread_list[count];
 	int total = 0;
@@ -248,7 +246,10 @@ void traverseList(copy_args *root, int count, char* method) {
 			pthread_create(&thread_list[total], NULL, restoreThread, current);
 		}
 		total++;
+		free_me = current;
 		current = current->next;
+		free(free_me);
+		
 	}
 
 	int thread = 0;
@@ -277,6 +278,18 @@ void printLinkedList(copy_args *root) {
 		printf("\t%s\n", current->filename);
 		printf("\t%s\n", current->destination);
 		current = current->next;
+	}
+
+}
+
+void freeNodes(copy_args *root) {
+	copy_args *current;
+	copy_args *next;
+	current = root->next;
+	free(root);
+	while(current != NULL) {
+		next = current->next;
+		free(current);
 	}
 
 }

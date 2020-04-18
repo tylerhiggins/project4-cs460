@@ -43,4 +43,6 @@ void printLinkedList(copy_args *root);
 
 void traverseList(copy_args *root, int count, char* method);
 
+void freeNodes(copy_args *root);
+
 #endif
