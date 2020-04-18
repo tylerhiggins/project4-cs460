@@ -17,6 +17,7 @@ int totalBytes = 0;
 int successfulFiles = 0;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_t *threadList;
 
 void updateTotalBytes(int b) {
 	pthread_mutex_lock(&lock);
@@ -355,8 +356,9 @@ int countFiles(char* dname) {
 // }
 
 int main(int argc, char **argv) {
-
-	int num = countFiles("testdir");
+	int num = 0;
+	char * backupDirectory = "testdir";
+	char * restoreDirectory = "testdir/.backup";
 
 	int restore = 0;
 	for( int i = 0; i < argc; i++ ){
@@ -370,20 +372,27 @@ int main(int argc, char **argv) {
 		if( DEBUG ){
 			printf("Restoring from backup.\n");
 		}
-		recursiveRestore("testdir/.backup");
+		num = countFiles(restoreDirectory);
+		threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
+		recursiveRestore(restoreDirectory);
 
 	}else{
 		if( createBackupDir() ){
 			return 1;
 		}
-
-		if(recursiveCopy("testdir")){
+		
+		num = countFiles(backupDirectory);
+		threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
+		if (DEBUG) printf("Counted %d files\n", num);
+		if(recursiveCopy(backupDirectory)){
 			return 1;
 		}
 	}
+	// joinThreads(num);
+	free(threadList);
 
+	printf("Success\n");
 	return 0;
 }
-
 
 
