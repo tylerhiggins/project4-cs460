@@ -31,18 +31,16 @@ int copyFile(FILE* fp, char* fname);
 
 int recursiveCopy(char* dname);
 
-void * createBackupFile(void *argument);
+void * backupThread(void *argument);
+
+void *restoreThread(void *arg);
 
 void joinThreads(pthread_t *thread_list, int count);
 
 int countFiles(char* dname);
 
-copy_args** initStructList();
+void printLinkedList(copy_args *root);
 
-void doubleListSize(copy_args* struct_list);
-
-void printStructList(copy_args **struct_list, int count);
-
-void traverseList(copy_args *root);
+void traverseList(copy_args *root, int count, char* method);
 
 #endif

@@ -68,7 +68,7 @@ This method is handed off to a thread,
 opens the original file for reading
 and backs up the file by making a copy
 */
-void * createBackupFile(void *argument) {
+void * backupThread(void *argument) {
 	int bytes = 0;
 	// load in the struct
 	struct copy_args args = *(struct copy_args*)argument;
@@ -78,7 +78,7 @@ void * createBackupFile(void *argument) {
 	//open just for reading
 	FILE* fp = fopen(args.filename, "r");
 	if( fp == NULL ){
-		perror("createBackupFile");
+		perror("backupThread");
 		exit(-1);
 	}
 	if (DEBUG) { printf("[thread %d] Opened file: %s\n", args.threadNum, args.filename );}
@@ -92,7 +92,7 @@ void * createBackupFile(void *argument) {
 		struct stat testSt;
 		int err = lstat(args.destination, &testSt);
 		if( err == -1 ){
-			perror("createBackupFile");
+			perror("backupThread");
 			exit(-1);
 		}
 		//true if the backup file was last modified before the main file
@@ -203,12 +203,7 @@ int recursiveCopy( char* dname ){
 				current->threadNum = total_threads;
 				total_threads++;
 				i++;
-
-				// printf("\t%d\n", current->threadNum);
-				// printf("\t%d\n", current->modifiedTime);
-				// printf("\t%s\n", current->filename);
-				// printf("\t%s\n", current->destination);
-
+				// connect linked list pointers
 				previous->next = current;
 				previous = current;
 
@@ -221,7 +216,7 @@ int recursiveCopy( char* dname ){
 	closedir(dir);
 
 	// run the threads
-	traverseList(root);
+	traverseList(root, i, "copy");
 
 	// join the threads
 	// printStructList(root, i);
@@ -231,9 +226,51 @@ int recursiveCopy( char* dname ){
 }
 
 
-void traverseList(copy_args *root) {
+/*
+Traverses the linked list
+Skips root as it expects root to only hold a pointer 
+to the starting node
+*/
+void traverseList(copy_args *root, int count, char* method) {
 	copy_args *current;
-	current = root;
+	current = root->next;
+	pthread_t thread_list[count];
+	int total = 0;
+	// create threads
+	while(current != NULL) {
+		// backup files
+		if (strncmp(method, "copy", 4) == 0) {
+			printf("Backing up Files\n");
+			pthread_create(&thread_list[total], NULL, backupThread, current);
+		}
+		// else restore files
+		else {
+			printf("Restoring up Files\n");
+			pthread_create(&thread_list[total], NULL, restoreThread, current);
+		}
+		total++;
+		current = current->next;
+	}
+
+	int thread = 0;
+	for (int i = 0; i < total; i++) {
+		pthread_join(thread_list[i], NULL);
+		printf("Joined thread %d of %d\n", i, total);
+
+	}
+
+}
+
+
+/*
+Traverses the linked list
+Skips root as it expects root to only hold a pointer 
+to the starting node
+*/
+void printLinkedList(copy_args *root) {
+	copy_args *current;
+	current = root->next;
+	int count = 0;
 	while(current != NULL) {
 		printf("Traversing List\n");
 		printf("\t%d\n", current->threadNum);
@@ -245,35 +282,6 @@ void traverseList(copy_args *root) {
 
 }
 
-// // TODO error check
-// copy_args** initStructList() {
-// 	int num = 16;
-// 	copy_args **arg_list = (copy_args**) malloc(sizeof(copy_args) * num);	
-// 	for (int i = 0; i < num; i++) {
-// 		// array[i] = (copy_args*) malloc(sizeof(copy_args));
-// 		current->filename = malloc(PATH_MAX);
-// 		current->destination = malloc(PATH_MAX);
-// 		current->modifiedTime = (time_t) malloc(sizeof(time_t));
-// 		current->threadNum = (int) malloc(sizeof(int));
-// 	}
-// 	return arg_list;
-// }
-
-
-void doubleListSize(copy_args *struct_list) {
-	
-}
-
-void printStructList(copy_args **struct_list, int count) {
-	for (int i = 0; i < count; i++) {
-		printf("i: %d\n", i);
-		printf("\t%d\n", &struct_list[i]->threadNum);
-		printf("\t%d\n", &struct_list[i]->modifiedTime);
-		printf("\t%s\n", &struct_list[i]->filename);
-		printf("\t%s\n", &struct_list[i]->destination);
-	}
-}
-
 
 int backupToMainPath( char* result, char* dirName, char* fileName ){
 	//assume the file name has a .bak extension
@@ -283,7 +291,7 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 }
 
 
-void *restoreThread(void *arg){
+void *restoreThread(void *arg) {
 
 	struct restore_args args = *(struct restore_args*)arg;
 	char destination[256];
