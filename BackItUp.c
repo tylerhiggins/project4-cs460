@@ -185,7 +185,7 @@ int recursiveCopy( char* dname ){
 			}
 			//check if this is a regular file
 			if( S_ISREG( st.st_mode ) ){
-
+				// init current node
 				copy_args *current = (copy_args *) malloc(sizeof(copy_args));	
 				current->next = NULL;
 
@@ -193,8 +193,6 @@ int recursiveCopy( char* dname ){
 				char dest[256] = "testdir/.backup/";
 				strncat(dest, ds->d_name, strlen(ds->d_name));
 				strcat(dest, ".bak");
-
-				printf("Found: %s\n", fname);
 				
 				// store variables in struct to avoid sharing memory
 				strncpy(current->filename, fname, strlen(fname) + 1);
@@ -203,6 +201,7 @@ int recursiveCopy( char* dname ){
 				current->threadNum = total_threads;
 				total_threads++;
 				i++;
+
 				// connect linked list pointers
 				previous->next = current;
 				previous = current;
@@ -255,7 +254,7 @@ void traverseList(copy_args *root, int count, char* method) {
 	int thread = 0;
 	for (int i = 0; i < total; i++) {
 		pthread_join(thread_list[i], NULL);
-		printf("Joined thread %d of %d\n", i, total);
+		if (DEBUG) printf("[  main  ] Joined thread %d of %d\n", i, total-1);
 
 	}
 
