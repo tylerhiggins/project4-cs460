@@ -52,7 +52,7 @@ int createBackupDir(){
 			printf("Backup directory already exists.\n");
 			return 0;
 		}else{
-			printError(strerror(errno));
+			perror("createBackupDir");
 			return 1;
 		}
 	}
@@ -78,7 +78,7 @@ void * createBackupFile(void *argument) {
 	//open just for reading
 	FILE* fp = fopen(args.filename, "r");
 	if( fp == NULL ){
-		printError(strerror(errno));
+		perror("createBackupFile");
 		exit(-1);
 	}
 	if (DEBUG) { printf("Opened file: %s\n", args.filename );}
@@ -92,7 +92,7 @@ void * createBackupFile(void *argument) {
 		struct stat testSt;
 		int err = lstat(args.destination, &testSt);
 		if( err == -1 ){
-			printError(strerror(errno));
+			perror("createBackupFile");
 			exit(-1);
 		}
 		//true if the backup file was last modified before the main file
@@ -125,7 +125,7 @@ int copyFile(FILE *fp, char* fname){
 	//create a new file for writing
 	FILE *new = fopen(fname, "w+");
 	if( new == NULL ){
-		printError(strerror(errno));
+		perror("copyFile");
 		return -1;
 	}
 	while( 1 ){
@@ -173,7 +173,7 @@ int recursiveCopy( char* dname ){
 			//treating symlinks as symlinks, not the files they link to
 			int err = lstat(fname, &st);
 			if( err == -1 ){
-				printError(strerror(errno));
+				perror("recursiveCopy");
 				return 1;
 			}
 			//check if this is a regular file
@@ -189,17 +189,18 @@ int recursiveCopy( char* dname ){
 
 				strncpy(args.filename, fname, strlen(fname) + 1);
 				strncpy(args.destination, dest, strlen(dest) + 1);
-
 				args.modifiedTime = st.st_mtime;
-				args.threadNum = num_threads;
-
+				num_threads++;
+				args.threadNum = total_threads;
+				printf("[main    ] creating thread %d to copy %s\n", total_threads, args.filename);
+				total_threads++;
 				// call the thread
 				pthread_t copy;
 				pthread_create(&copy, NULL, createBackupFile, &args);
-				printf("Waiting on thread %d to join\n", num_threads);
-				thread_list[num_threads] = copy;
-				// pthread_join(copy, NULL);
-				num_threads++;
+				// thread_list[num_threads] = copy;
+				pthread_create(&thread_list[num_threads-1], NULL, createBackupFile, &args);
+
+				pthread_join(copy, NULL);
 				// printf("thread %d joined\n", num_threads);
 				// threadList[thread_count] = copy;
 				// thread_count++;
@@ -210,13 +211,14 @@ int recursiveCopy( char* dname ){
 
 			}
 			else if( S_ISDIR( st.st_mode ) ){
-				printf("TODO: skipping directory\n");
+				printf("[main    ] TODO: skipping directory '%s'\n", fname);
 			}
 		}
 	}
 	closedir(dir);
-	// printf("Joining Threads: %d\n", num_threads);
-	joinThreads(thread_list, num_threads);
+	// printf("[main 0] joining %d threads\n", num_threads);
+	// joinThreads(thread_list, num_threads);
+	// printf("[main 0] finished joining threads %d\n", num_threads);
 	// printf("Freeing thread_list\n");
 	// free(thread_list);
 }
@@ -278,7 +280,7 @@ int recursiveRestore( char* dname ){
 		struct stat backup;
 		int err = lstat(fname, &backup);
 		if( err == -1 ){
-			printError(strerror(errno));
+			perror("recursiveRestore");
 			return 1;
 		}
 
@@ -299,7 +301,7 @@ int recursiveRestore( char* dname ){
 
 				err = lstat(newDest, &tmp);
 				if( err == -1 ){
-					printError(strerror(errno));
+					perror("recursiveRestore");
 				} else{
 				//compare modification times
 					canCopy = (backup.st_mtime < tmp.st_mtime);
@@ -315,7 +317,7 @@ int recursiveRestore( char* dname ){
 				//open file for reading only
 				FILE *fp = fopen(fname, "r");
 				if( fp == NULL ){
-					printError(strerror(errno));
+					perror("recursiveRestore");
 					return 1;
 				}
 				args.fileToRestore = fp;
@@ -366,7 +368,7 @@ int countFiles(char* dname) {
 			//treating symlinks as symlinks, not the files they link to
 			int err = lstat(fname, &st);
 			if( err == -1 ){
-				printf("countFiles %s\n", strerror(errno));
+				perror("countFiles");
 				return 1;
 			}
 			//check if this is a regular file
@@ -384,12 +386,13 @@ int countFiles(char* dname) {
 }
 
 // JOIN threads list
-void joinThreads(pthread_t *thread_list, int count) {
-	// alarm(1);
-	// pause();
+void joinThreads(pthread_t thread_list[], int count) {
+	alarm(1);
+	pause();
 	for (int i = 0; i < count; i++) {
-		if (DEBUG) printf("[thread %d] is joining\n", i);
+		if (DEBUG) printf("[thread %d] waiting to join\n", i);
 		pthread_join(thread_list[i], NULL);
+		if (DEBUG) printf("[thread %d] has joined\n", i);
 	}
 
 }
