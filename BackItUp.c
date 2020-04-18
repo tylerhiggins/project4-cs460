@@ -10,13 +10,15 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define BDIR "testdir/.backup"
 
 int totalBytes = 0;
 int successfulFiles = 0;
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_t *threadList;
+int thread_count = 0;
 
 void updateTotalBytes(int b) {
 	pthread_mutex_lock(&lock);
@@ -56,9 +58,10 @@ opens the original file for reading
 and backs up the file by making a copy
 */
 void * createBackupFile(void *argument) {
+	int bytes = 0;
 	// load in the struct
 	struct thread_args args = *(struct thread_args*)argument;
-	if (DEBUG) { printf("Thread %ld creating backup of: %s\n", pthread_self(), args.filename);}
+	printf("[thread %d] Backing up %s\n", args.threadNum, args.filename);
 
 	//if so, copy the file to the backup directory
 	//open just for reading
@@ -87,16 +90,17 @@ void * createBackupFile(void *argument) {
 
 	if( canCopy ){
 		if( exists ){
-			printf("Overwriting outdated backup file.\n");
+			printf("[thread %d] WARNING: Overwriting %s\n", args.threadNum, args.filename);
 		}
 		if (DEBUG) { printf("Copying file: %s to %s\n", args.filename, args.destination);}
-		copyFile(fp, args.destination);	
+		bytes = copyFile(fp, args.destination);	
+		printf("[thread %d] Copied %d bytes from %s to %s\n", args.threadNum, bytes, args.filename, args.destination);
 	}else if( exists ){
-		printf("Backup file is already up-to-date.\n");
+		printf("[thread %d] NOTICE: %s is already the most current version\n", args.threadNum, args.filename);
 	}
 	
 	fclose(fp);
-
+	pthread_exit(NULL);
 }
 
 
@@ -132,6 +136,7 @@ int copyFile(FILE *fp, char* fname){
 int recursiveCopy( char* dname ){
 	//travel through all directories and copy files
 	// into the same directory structure
+	int num_threads = 0;
 	struct dirent* ds;
 	DIR* dir = opendir(dname);
 	while( (ds = readdir(dir)) != NULL ){
@@ -142,9 +147,9 @@ int recursiveCopy( char* dname ){
 			struct stat st;
 			
 			char fname[256] = "";
-			strncat(fname, dname, strlen(fname) + strlen(dname) + 1);
-			strncat( fname, "/", strlen(fname) + 2);
-			strncat(fname, ds->d_name, strlen(fname) + strlen(ds->d_name) + 1);
+			strncat(fname, dname, strlen(dname));
+			strcat( fname, "/");
+			strncat(fname, ds->d_name, strlen(ds->d_name));
 
 			//treating symlinks as symlinks, not the files they link to
 			int err = lstat(fname, &st);
@@ -157,19 +162,25 @@ int recursiveCopy( char* dname ){
 
 				//make a new filename for the copy
 				char dest[256] = "testdir/.backup/";
-				strncat(dest, ds->d_name, strlen(dest) + strlen(ds->d_name) + 1);
-				strncat(dest, ".bak", strlen(dest) + strlen(".bak") + 1);
+				strncat(dest, ds->d_name, strlen(ds->d_name));
+				strcat(dest, ".bak");
 
 				// store variables in struct to avoid sharing memory
 				struct thread_args args;
-				strncpy(args.filename, fname, strlen(fname));
-				strncpy(args.destination, dest, strlen(dest));
+
+				strncpy(args.filename, fname, strlen(fname) + 1);
+				strncpy(args.destination, dest, strlen(dest) + 1);
+
 				args.modifiedTime = st.st_mtime;
+				num_threads++;
+				args.threadNum = num_threads;
 
 				// call the thread
 				pthread_t copy;
 				pthread_create(&copy, NULL, createBackupFile, &args);
 				pthread_join(copy, NULL);
+				// threadList[thread_count] = copy;
+				// thread_count++;
 
 			}
 			else if( S_ISDIR( st.st_mode ) ){
@@ -186,6 +197,8 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 	strncat(result, fileName, strlen(fileName)-4);
 	return 0;
 }
+
+
 void *restoreThread(void *arg){
 
 	struct restore_args args = *(struct restore_args*)arg;
@@ -210,6 +223,8 @@ void *restoreThread(void *arg){
 		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
 	} 
 }
+
+
 int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
 	// backup directory to the main directory
@@ -299,8 +314,58 @@ int recursiveRestore( char* dname ){
 
 }
 
+// recursively traverse the directory and counts the number of files
+int countFiles(char* dname) {
+	int count = 0;
+	//travel through all directories and copy files
+	// into the same directory structure
+	struct dirent* ds;
+	DIR* dir = opendir(dname);
+	while( (ds = readdir(dir)) != NULL ){
+		//while the next directory is not null
+		if( strncmp( ds->d_name, ".", 1 ) != 0 && strncmp(ds->d_name, "..", 2) != 0 ){
+			//and this is not the current or previous directory structure
+			//check status of object
+			struct stat st;
+			
+			char fname[256] = "";
+			strncat(fname, dname, strlen(fname) + strlen(dname) + 1);
+			strncat( fname, "/", strlen(fname) + 2);
+			strncat(fname, ds->d_name, strlen(fname) + strlen(ds->d_name) + 1);
+
+			//treating symlinks as symlinks, not the files they link to
+			int err = lstat(fname, &st);
+			if( err == -1 ){
+				printf("countFiles %s\n", strerror(errno));
+				return 1;
+			}
+			//check if this is a regular file
+			if( S_ISREG( st.st_mode ) ){
+				count++;
+			}
+			else if( S_ISDIR( st.st_mode ) ){
+				// printf("Entering directory %s\n", fname);
+				count += countFiles(fname);
+			}
+		}
+	}
+	closedir(dir);
+	return count;
+}
+
+// JOIN threads list
+void joinThreads(int count) {
+	for (int i = 0; i < count; i++) {
+		if (DEBUG) printf("[thread %d] is joining\n", i);
+		pthread_join(threadList[i], NULL);
+	}
+
+}
 
 int main(int argc, char **argv) {
+	int num = 0;
+	char * backupDirectory = "testdir";
+	char * restoreDirectory = "testdir/.backup";
 
 	int restore = 0;
 	for( int i = 0; i < argc; i++ ){
@@ -314,20 +379,27 @@ int main(int argc, char **argv) {
 		if( DEBUG ){
 			printf("Restoring from backup.\n");
 		}
-		recursiveRestore("testdir/.backup");
+		num = countFiles(restoreDirectory);
+		threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
+		recursiveRestore(restoreDirectory);
 
 	}else{
 		if( createBackupDir() ){
 			return 1;
 		}
-
-		if(recursiveCopy("testdir")){
+		
+		num = countFiles(backupDirectory);
+		threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
+		if (DEBUG) printf("Counted %d files\n", num);
+		if(recursiveCopy(backupDirectory)){
 			return 1;
 		}
 	}
+	// joinThreads(num);
+	free(threadList);
 
+	printf("Success\n");
 	return 0;
 }
-
 
 
