@@ -200,7 +200,7 @@ int recursiveCopy( char* dname ){
 				// thread_list[num_threads] = copy;
 				pthread_create(&thread_list[num_threads-1], NULL, createBackupFile, &args);
 
-				pthread_join(copy, NULL);
+				// pthread_join(copy, NULL);
 				// printf("thread %d joined\n", num_threads);
 				// threadList[thread_count] = copy;
 				// thread_count++;
@@ -431,8 +431,10 @@ int main(int argc, char **argv) {
 	}
 	// joinThreads(num);
 	// free(threadList);
+	pthread_mutex_lock(&lock);
+	printf("Successfully copied %d files (%d bytes)\n", successfulFiles, totalBytes);
+	pthread_mutex_unlock(&lock);
 
-	printf("[  main  ] Success\n");
 	return 0;
 }
 
