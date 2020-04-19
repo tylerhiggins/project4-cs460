@@ -49,7 +49,7 @@ int createBackupDir(){
 	int err = mkdir(BDIR, 0777);
 	if( err == -1 ){
 		if( errno == EEXIST ){
-			printf("[  main  ] Backup directory already exists.\n");
+			if (DEBUG) printf("[  main  ] Backup directory already exists.\n");
 			return 0;
 		}else{
 			perror("createBackupDir");
