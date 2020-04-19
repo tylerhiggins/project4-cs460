@@ -5,6 +5,7 @@
 [9] Make sure the restoreThread closes the FP
 [10] Make sure the recursiveRestore closes the backupDir
 [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
+[12] Fix memory leaks caused by strok in restoreThread
 
 ## Tests ##
 

@@ -26,7 +26,7 @@ backitup-test: ${BACKITUP}
 	./${BACKITUP}
 
 restore: all
-	././${BACKITUP} -r
+	./${BACKITUP} -r
 	
 tree:
 	tree -a testdir/
