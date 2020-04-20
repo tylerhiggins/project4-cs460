@@ -1,13 +1,16 @@
 # TODO #
 
 - [7] Modify program to work recursively on directories
-- [8] Test backing up large files, csv, and image files
+- [8] Update to use the cwd instead of /testdir
 - [9] Make sure the restoreThread closes the FP
 - [10] Make sure the recursiveRestore closes the backupDir
 - [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [12] Fix memory leaks caused by strok in restoreThread
 
 ## Tests ##
+- [t1] Test files without read permission
+- [t2] Test backing up large files, csv, and image files
+- [t3] Test empty files
 
 # Issues In Progress #
 
