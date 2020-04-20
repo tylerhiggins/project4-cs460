@@ -1,11 +1,13 @@
 # TODO #
 
-- [7] Modify program to work recursively on directories
+
+- [14] Modify restore to work recursively on directories
 - [8] Update to use the cwd instead of /testdir
 - [9] Make sure the restoreThread closes the FP
 - [10] Make sure the recursiveRestore closes the backupDir
 - [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [12] Fix memory leaks caused by strok in restoreThread
+- [13] Add comments to each method
 
 ## Tests ##
 - [t1] Test files without read permission
@@ -20,6 +22,7 @@
 ## Jacob ##
 
 ## Julian ##
+- [7] Modify copy to work recursively on directories
 
 
 # Completed #

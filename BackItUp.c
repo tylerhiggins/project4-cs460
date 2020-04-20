@@ -203,6 +203,7 @@ int recursiveCopy( char* dname ){
 			}
 			else if( S_ISDIR( st.st_mode ) ){
 				if (DEBUG) printf("[  main  ] TODO: skipping directory '%s'\n", fname);
+				recursiveCopy(fname);
 			}
 		}
 	}
@@ -230,7 +231,6 @@ void traverseCopyList(copy_args *root, int count) {
 	// create threads
 	while(current != NULL) {
 		// backup files
-		printf("Backing up Files\n");
 		pthread_create(&thread_list[total], NULL, backupThread, current);
 		total++;
 		free_me = current;
