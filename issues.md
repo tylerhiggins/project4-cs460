@@ -8,6 +8,7 @@
 - [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [12] Fix memory leaks caused by strok in restoreThread
 - [13] Add comments to each method
+- [14] fix misc valgrind issues
 
 ## Tests ##
 - [t1] Test files without read permission

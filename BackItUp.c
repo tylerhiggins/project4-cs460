@@ -144,6 +144,23 @@ int copyFile(FILE *fp, char* fname){
 	return bytes_copied;
 }
 
+// TODO allocate memory here
+char* removeParentDir(char* path) {
+	char *new_path = (char*) calloc(PATH_MAX, sizeof(char));
+	new_path[0] = '\0';		// just incase path is empty
+	int slash = 0;
+	// Grabbing just the filename from the path
+	for (int i = 0; i < strlen(path); i++) {
+		if (path[i] == '/') {
+			slash = i;
+			printf("Found slash at %d\n", slash);
+			break;
+		} 
+	}
+	strncpy(new_path, path+slash, strlen(path) - slash);
+	return new_path;
+}
+
 int recursiveCopy( char* dname ){
 	//travel through all directories and copy files
 	// into the same directory structure
@@ -183,10 +200,19 @@ int recursiveCopy( char* dname ){
 				copy_args *current = (copy_args *) malloc(sizeof(copy_args));	
 				current->next = NULL;
 
+				printf("fname is: %s\n", fname);
+
+
+				char* path = removeParentDir(fname);
+				printf("new path: '%s'\n", path);
+
 				//make a new filename for the copy
-				char dest[256] = "testdir/.backup/";
-				strncat(dest, ds->d_name, strlen(ds->d_name));
+				char dest[4096] = "testdir/.backup";		// TODO need to concatenate dirname
+				strncat(dest, path, strlen(path));
 				strcat(dest, ".bak");
+				free(path);
+
+				printf("dest is: %s\n", dest);
 				
 				// store variables in struct to avoid sharing memory
 				strncpy(current->filename, fname, strlen(fname) + 1);
@@ -327,10 +353,6 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 	return 0;
 }
 
-/*
-	struct copy_args args = *(struct copy_args*)argument;
-	printf("[thread %d] Backing up %s\n", args.threadNum, args.filename);
-*/
 void *restoreThread(void *arg) {
 	struct restore_args args = *(struct restore_args*)arg;
 	char destination[256];
@@ -515,7 +537,7 @@ void joinThreads(pthread_t thread_list[], int count) {
 
 int main(int argc, char **argv) {
 	char * backupDirectory = "testdir";
-	char * restoreDirectory = "testdir/.backup";
+	char * restoreDirectory = BDIR;
 
 	int restore = 0;
 	for( int i = 0; i < argc; i++ ){
