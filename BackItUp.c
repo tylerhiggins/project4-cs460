@@ -105,7 +105,9 @@ void * backupThread(void *argument) {
 		}
 		if (DEBUG) { printf("Copying file: %s to %s\n", args.filename, args.destination);}
 		bytes = copyFile(fp, args.destination);	
-		updateTotalBytes(bytes);
+		if (bytes > 0) {
+			updateTotalBytes(bytes);
+		}
 		printf("[thread %d] Copied %d bytes from %s to %s\n", args.threadNum, bytes, args.filename, args.destination);
 	}else if( exists ){
 		printf("[thread %d] NOTICE: %s is already the most current version\n", args.threadNum, args.filename);
@@ -122,6 +124,7 @@ int copyFile(FILE *fp, char* fname){
 
 	if (DEBUG) printf("[thread _] copying %s\n", fname);
 
+	// TODO need to be able to create directories
 	//create a new file for writing
 	FILE *new = fopen(fname, "w+");
 	if( new == NULL ){
