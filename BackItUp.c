@@ -128,7 +128,7 @@ int copyFile(FILE *fp, char* fname){
 	//create a new file for writing
 	FILE *new = fopen(fname, "w+");
 	if( new == NULL ){
-		perror("copyFile");
+		fprintf(stderr, "copyFile: %s '%s'\n", strerror(errno), fname);
 		return -1;
 	}
 	while( 1 ){
@@ -147,7 +147,9 @@ int copyFile(FILE *fp, char* fname){
 	return bytes_copied;
 }
 
-// TODO allocate memory here
+/*
+removes the top level directory from a filepath
+*/
 char* removeParentDir(char* path) {
 	char *new_path = (char*) calloc(PATH_MAX, sizeof(char));
 	new_path[0] = '\0';		// just incase path is empty
@@ -156,7 +158,6 @@ char* removeParentDir(char* path) {
 	for (int i = 0; i < strlen(path); i++) {
 		if (path[i] == '/') {
 			slash = i;
-			printf("Found slash at %d\n", slash);
 			break;
 		} 
 	}

@@ -1,6 +1,4 @@
 # TODO #
-
-
 - [14] Modify restore to work recursively on directories
 - [8] Update to use the cwd instead of /testdir
 - [9] Make sure the restoreThread closes the FP
@@ -10,6 +8,7 @@
 - [13] Add comments to each method
 - [15] fix misc valgrind issues
 - [16] copyFile needs to be able to create directories
+- [17] make sure all methods are being error checked, malloc, pthread funcs, etc
 
 ## Tests ##
 - [t1] Test files without read permission
@@ -24,7 +23,6 @@
 ## Jacob ##
 
 ## Julian ##
-
 
 
 # Completed #
