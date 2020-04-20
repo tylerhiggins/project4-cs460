@@ -203,19 +203,12 @@ int recursiveCopy( char* dname ){
 				copy_args *current = (copy_args *) malloc(sizeof(copy_args));	
 				current->next = NULL;
 
-				printf("fname is: %s\n", fname);
-
-
-				char* path = removeParentDir(fname);
-				printf("new path: '%s'\n", path);
-
 				//make a new filename for the copy
-				char dest[4096] = "testdir/.backup";		// TODO need to concatenate dirname
+				char* path = removeParentDir(fname);
+				char dest[4096] = "testdir/.backup";
 				strncat(dest, path, strlen(path));
 				strcat(dest, ".bak");
 				free(path);
-
-				printf("dest is: %s\n", dest);
 				
 				// store variables in struct to avoid sharing memory
 				strncpy(current->filename, fname, strlen(fname) + 1);
