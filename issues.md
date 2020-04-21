@@ -14,10 +14,7 @@
 # Issues In Progress #
 
 ## Tyler ##
-- [14] Modify restore to work recursively on directories
-- [9] Make sure the restoreThread closes the FP
-- [12] Fix memory leaks caused by strok in restoreThread
-- [10] Make sure the recursiveRestore closes the backupDir
+
 
 ## Jacob ##
 
@@ -32,3 +29,7 @@
 - [5] Compare last modification times of duplicate files before restoring, and inform the user
 - [7] Modify copy to work recursively on directories
 [6] Create a thread to restore each file\
+- [14] Modify restore to work recursively on directories
+- [9] Make sure the restoreThread closes the FP
+- [12] Fix memory leaks caused by strok in restoreThread
+- [10] Make sure the recursiveRestore closes the backupDir

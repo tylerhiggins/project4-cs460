@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define BDIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -62,7 +62,18 @@ int createBackupDir(){
 	return 0;
 }
 
-
+int checkDir(char *dir){
+    int err = mkdir(dir, 0777);
+    if(err == -1){
+        if(errno == EEXIST)
+            return 2;
+        else {
+            perror("checkDir");
+            return 1;
+        }
+    }
+    return 0;
+}
 /* 
 This method is handed off to a thread,
 opens the original file for reading
@@ -226,6 +237,14 @@ int recursiveCopy( char* dname ){
 			}
 			else if( S_ISDIR( st.st_mode ) ){
 				if (DEBUG) printf("[  main  ] TODO: skipping directory '%s'\n", fname);
+				char *newPath = removeParentDir(fname);
+				char backup[4096] = BDIR;
+				strncat(backup, newPath, strlen(newPath));
+				free(newPath);
+				if( DEBUG ) printf("Checking to see if %s exists... ", backup);
+				int status = checkDir(backup);
+				if( status == 2 ) printf("directory already exists!\n");
+				else if ( status == 0 ) printf("Created new directory %s\n", backup);
 				recursiveCopy(fname);
 			}
 		}
@@ -345,14 +364,32 @@ void printRestoreLinkedList(restore_args *root) {
 
 int backupToMainPath( char* result, char* dirName, char* fileName ){
 	//assume the file name has a .bak extension
-	strncat(result, dirName, strlen(dirName)-7);
-	strncat(result, fileName, strlen(fileName)-4);
+	char dirName2 [PATH_MAX] = "";
+	strncpy(dirName2, dirName, strlen(dirName));
+	char *dname = dirName2;
+	char *parent = strtok_r(dname,"/",&dname);
+	strncpy(result,parent,strlen(parent));
+	char *tmp;
+	while((tmp = strtok_r(dname, "/",&dname)) != NULL){
+		if(strncmp(tmp,".backup",7)== 0){
+			continue;
+		} else {
+			strncat(result,"/",1);
+			strncat(result,tmp,strlen(tmp));
+		}
+	}
+	if(fileName != NULL){
+		strncat(result,"/",1);
+		strncat(result,fileName,strlen(fileName)-4);
+	}
+	//strncat(result, dirName, strlen(dirName)-7);
+	//strncat(result, fileName, strlen(fileName)-4);
 	return 0;
 }
 
 void *restoreThread(void *arg) {
 	struct restore_args args = *(struct restore_args*)arg;
-	char destination[256];
+	char destination[256] = "";
 	strncpy(destination,args.destination,strlen(args.destination));
 	char *filename = NULL;
 	char *tmp;
@@ -371,7 +408,8 @@ void *restoreThread(void *arg) {
 			updateTotalBytes(bytes);
 	} else {
 		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
-	} 
+	}
+	fclose(args.fileToRestore); 
 }
 
 
@@ -422,7 +460,8 @@ int recursiveRestore( char* dname ){
 			if( access(fname, F_OK) != -1 ){
 				//file exists
 				struct stat tmp;
-				
+				if ( DEBUG ) printf("dname = %s\n", dname);
+				if ( DEBUG ) printf("backupDirent->d_name = %s\n", backupDirent->d_name);
 				backupToMainPath(newDest, dname, backupDirent->d_name);
 
 				err = lstat(newDest, &tmp);
@@ -471,9 +510,19 @@ int recursiveRestore( char* dname ){
 
 		}else if( S_ISDIR( backup.st_mode ) ){
 			printf("TODO: skipping directory restoration\n");
+			printf("fname: %s\n",fname);
+			char splitString[4096] = "";
+			strncpy(splitString,fname,strlen(fname));
+			char *splitString2 = splitString;
+			char fullDir [4096] = "";
+			backupToMainPath(fullDir,fname,NULL);
+			if( DEBUG ) printf("fullDir = %s\n", fullDir);
+			checkDir(fullDir);
+			recursiveRestore(fname);
 		}
 
 	}
+	closedir(backupDir);
 	if (DEBUG) printRestoreLinkedList(root);
 	traverseRestoreList(root, i);
 	freeRestoreLinkedList(root);
