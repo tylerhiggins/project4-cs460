@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define BDIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;

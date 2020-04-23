@@ -3,7 +3,6 @@
 - [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [13] Add comments to each method
 - [15] fix misc valgrind issues
-- [16] copyFile needs to be able to create directories
 - [17] make sure all methods are being error checked, malloc, pthread funcs, etc
 
 ## Tests ##
@@ -33,3 +32,4 @@
 - [9] Make sure the restoreThread closes the FP
 - [12] Fix memory leaks caused by strok in restoreThread
 - [10] Make sure the recursiveRestore closes the backupDir
+- [16] copyFile needs to be able to create directories
