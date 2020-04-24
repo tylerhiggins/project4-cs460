@@ -1,6 +1,5 @@
 # TODO #
 - [8] Update to use the cwd instead of /testdir
-- [13] Add comments to each method
 
 ## Tests ##
 - [t1] Test files without read permission
@@ -32,3 +31,4 @@
 - [15] fix misc valgrind issues
 - [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [17] make sure all methods are being error checked, malloc, pthread funcs, etc
+- [13] Add comments to each method
