@@ -2,6 +2,7 @@
 - [8] Update to use the cwd instead of /testdir
 - [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [13] Add comments to each method
+- [15] fix misc valgrind issues
 - [17] make sure all methods are being error checked, malloc, pthread funcs, etc
 
 ## Tests ##
@@ -12,7 +13,6 @@
 # Issues In Progress #
 
 ## Tyler ##
-- [15] fix misc valgrind issues
 
 ## Jacob ##
 
