@@ -1,8 +1,6 @@
 # TODO #
 - [8] Update to use the cwd instead of /testdir
-- [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
 - [13] Add comments to each method
-- [17] make sure all methods are being error checked, malloc, pthread funcs, etc
 
 ## Tests ##
 - [t1] Test files without read permission
@@ -32,3 +30,5 @@
 - [10] Make sure the recursiveRestore closes the backupDir
 - [16] copyFile needs to be able to create directories
 - [15] fix misc valgrind issues
+- [11] use a mutex on printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes); since it is shared
+- [17] make sure all methods are being error checked, malloc, pthread funcs, etc
