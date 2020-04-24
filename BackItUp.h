@@ -43,6 +43,8 @@ int countFiles(char* dname);
 
 void printLinkedList(copy_args *root);
 
+void freeArgs(copy_args *root);
+
 void traverseCopyList(copy_args *root, int count);
 
 void traverseRestoreList(restore_args *root, int count);

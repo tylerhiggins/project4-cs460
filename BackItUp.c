@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define BDIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -257,6 +257,15 @@ int recursiveCopy( char* dname ){
 	free(root);
 }
 
+void freeArgs(copy_args *root){
+	copy_args *current = root->next;
+	copy_args *free_me = NULL;
+	while(current != NULL){
+		free_me = current;
+		current = current->next;
+		free(free_me);
+	}
+}
 
 /*
 Traverses the linked list
@@ -271,13 +280,18 @@ void traverseCopyList(copy_args *root, int count) {
 	pthread_t thread_list[count];
 	int total = 0;
 	// create threads
-	while(current != NULL) {
-		// backup files
+	// while(current != NULL) {
+	// 	// backup files
+	// 	pthread_create(&thread_list[total], NULL, backupThread, current);
+	// 	total++;
+	// 	free_me = current;
+	// 	current = current->next;
+	// 	free(free_me);	
+	// }
+	while( current != NULL){
 		pthread_create(&thread_list[total], NULL, backupThread, current);
 		total++;
-		free_me = current;
-		current = current->next;
-		free(free_me);	
+		current= current->next;
 	}
 	int thread = 0;
 	for (int i = 0; i < total; i++) {
@@ -285,9 +299,9 @@ void traverseCopyList(copy_args *root, int count) {
 		if (DEBUG) printf("[  main  ] Joined thread %d of %d\n", i, total-1);
 
 	}
+	freeArgs(root);
 
 }
-
 
 void traverseRestoreList(restore_args *root, int count) {
 	restore_args *current;
@@ -296,20 +310,24 @@ void traverseRestoreList(restore_args *root, int count) {
 	pthread_t thread_list[count];
 	int total = 0;
 	// create threads
+	// while(current != NULL) {
+	// 	// backup files
+	// 	pthread_create(&thread_list[total], NULL, restoreThread, current);
+	// 	total++;
+	// 	free_me = current;
+	// 	current = current->next;
+	// }
 	while(current != NULL) {
-		// backup files
 		pthread_create(&thread_list[total], NULL, restoreThread, current);
 		total++;
-		free_me = current;
 		current = current->next;
 	}
-
 	int thread = 0;
 	for (int i = 0; i < total; i++) {
 		pthread_join(thread_list[i], NULL);
 		if (DEBUG) printf("[  main  ] Joined thread %d of %d\n", i, total-1);
 	}
-
+	freeRestoreLinkedList(root);
 }
 
 
@@ -344,7 +362,7 @@ void freeRestoreLinkedList(restore_args *root) {
 		current = current->next;
 		free(free_me);
 	}
-	free(root);
+	//free(root);
 }
 
 void printRestoreLinkedList(restore_args *root) {
@@ -422,6 +440,10 @@ int recursiveRestore( char* dname ){
 	if (root == NULL) {
 		perror("recursiveCopy");
 	}
+	strncpy(root->destination, "",1);
+	root->threadNum = 0;
+	root->fileToRestore = 0;
+	root->next = NULL;
 	restore_args *previous = root;
 	int i = 0;
 
@@ -472,6 +494,9 @@ int recursiveRestore( char* dname ){
 					canCopy = (backup.st_mtime < tmp.st_mtime);
 				}
 			}
+			if(DEBUG){
+				printf("canCopy: %d\n", canCopy);
+			}
 
 			if( canCopy ){
 				if( DEBUG ){
@@ -482,6 +507,9 @@ int recursiveRestore( char* dname ){
 				printf("Allocating current %d\n", i);
 				restore_args *current = (restore_args *) malloc(sizeof(restore_args));	
 				current->next = NULL;
+				current->fileToRestore = NULL;
+				strncpy(current->destination, "",1);
+				current->threadNum = 0;
 
 				//open file for reading only
 				FILE *fp = fopen(fname, "r");
@@ -525,9 +553,10 @@ int recursiveRestore( char* dname ){
 	closedir(backupDir);
 	if (DEBUG) printRestoreLinkedList(root);
 	traverseRestoreList(root, i);
-	freeRestoreLinkedList(root);
+	//freeRestoreLinkedList(root);
 	// TODO mutex lock
 	printf("Copied %d files (%d bytes)\n",successfulFiles, totalBytes);
+	free(root);
 }
 
 // recursively traverse the directory and counts the number of files
