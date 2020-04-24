@@ -349,7 +349,7 @@ void printCopyLinkedList(copy_args *root) {
 
 }
 
-// does not free root
+/* Frees all nodes of the linked list except for the root node */
 void freeRestoreLinkedList(restore_args *root) {
 	restore_args *current;
 	restore_args *free_me;
@@ -377,7 +377,8 @@ void printRestoreLinkedList(restore_args *root) {
 	}
 }
 
-
+/* This method takes out the .backup directory and the .bak file extention
+   In order to restore the file where it is originally was located. */
 int backupToMainPath( char* result, char* dirName, char* fileName ){
 	//assume the file name has a .bak extension
 	char dirName2 [PATH_MAX] = "";
@@ -402,7 +403,7 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 	//strncat(result, fileName, strlen(fileName)-4);
 	return 0;
 }
-
+/* Thread to take over copying a file from the .backup directory */
 void *restoreThread(void *arg) {
 	struct restore_args args = *(struct restore_args*)arg;
 	char destination[256] = "";
@@ -428,7 +429,8 @@ void *restoreThread(void *arg) {
 	fclose(args.fileToRestore); 
 }
 
-
+/* recursively goes through each subdirectory and file in the .backup directory 
+   and counts the files that needs to be copied */
 int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
 	// backup directory to the main directory
@@ -611,7 +613,7 @@ void joinThreads(pthread_t thread_list[], int count) {
 	}
 
 }
-
+/* main function of the program. */
 int main(int argc, char **argv) {
 	char * backupDirectory = "testdir";
 	char * restoreDirectory = BDIR;
