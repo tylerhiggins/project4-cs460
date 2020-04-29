@@ -50,7 +50,7 @@ tarball: clean
 # make a zip file
 zip: clean
 	rm -f ${PROJ}.zip ${PROJ}.tgz
-	zip -r ${PROJ}.zip *.c *.h Makefile README.* -x ".gitignore"
+	zip -r ${PROJ}.zip *.c *.h Makefile README.* readme.* report.pdf -x ".gitignore"
 
 
 # make a zip file including git

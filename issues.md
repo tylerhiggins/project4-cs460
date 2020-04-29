@@ -1,6 +1,7 @@
 # TODO #
 - [8] Update to use the cwd instead of /testdir
 - [18] the canCopy check in recursiveRestore needs to be moved to the thread, right now it is in the main thread. See the sample output. 
+- [19] Multiple threads restore the same file
 
 ## Tests ##
 - [t1] Test files without read permission
