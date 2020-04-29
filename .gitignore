@@ -5,3 +5,4 @@ BackItUp
 sftp/
 testdir/
 backuptestdir/
+.backup/
