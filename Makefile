@@ -31,6 +31,34 @@ restore: all
 tree:
 	tree -a testdir/
 
+get_test:
+	echo "Downloading Test Repo"
+	git clone git@github.com:JulianKeller/testfiles.git
+
+test: all
+	echo ""
+	echo "Backing up all files"
+	./${BACKITUP}
+
+	echo ""
+	echo "Backing up all files a second time"
+	./${BACKITUP}
+
+	echo ""
+	echo "Deleting testfiles/"
+	rm -rf testfiles/
+
+	echo ""
+	echo "Restoring up all files"
+	./${BACKITUP} -r
+
+	echo ""
+	echo "Restoring up all files second time"
+	./${BACKITUP} -r
+
+count_files:
+	find . | wc -l
+
 rm: 
 	rm -r testdir/.backup
 
@@ -50,7 +78,7 @@ tarball: clean
 # make a zip file
 zip: clean
 	rm -f ${PROJ}.zip ${PROJ}.tgz
-	zip -r ${PROJ}.zip *.c *.h Makefile README.* readme.* report.pdf -x ".gitignore"
+	zip -r ${PROJ}.zip *.c *.h Makefile README.* -x ".gitignore"
 
 
 # make a zip file including git
