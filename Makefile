@@ -21,10 +21,21 @@ c.o:
 valgrind: clean all
 	valgrind --leak-check=full ./${BACKITUP}
 
-
 backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---
 	./${BACKITUP}
+
+restore: all
+	./${BACKITUP} -r
+	
+tree:
+	tree -a testdir/
+
+rm: 
+	rm -r testdir/.backup
+
+r: 
+	rm testdir/a testdir/b
 
 # deletes unneccessary files
 clean:
@@ -39,7 +50,7 @@ tarball: clean
 # make a zip file
 zip: clean
 	rm -f ${PROJ}.zip ${PROJ}.tgz
-	zip -r ${PROJ}.zip *.c *.h Makefile README.* readme.* report.pdf -x ".gitignore"
+	zip -r ${PROJ}.zip *.c *.h Makefile README.* -x ".gitignore"
 
 
 # make a zip file including git
