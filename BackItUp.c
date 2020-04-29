@@ -175,6 +175,7 @@ char* removeParentDir(char* path) {
 	strncpy(new_path, path+slash, strlen(path) - slash);
 	return new_path;
 }
+
 /* Goes through each directory recursively and finds files to copy */
 int recursiveCopy( char* dname ){
 	//travel through all directories and copy files
@@ -247,7 +248,7 @@ int recursiveCopy( char* dname ){
 				free(newPath);
 				if( DEBUG ) printf("Checking to see if %s exists... ", backup);
 				int status = checkDir(backup);
-				if( status == 2 ) printf("directory already exists!\n");
+				if (DEBUG) if( status == 2 ) printf("directory already exists!\n");
 				else if ( status == 0 ) printf("Created new directory %s\n", backup);
 				recursiveCopy(fname);
 			}
@@ -391,18 +392,17 @@ int backupToMainPath( char* result, char* dirName, char* fileName ){
 		if(strncmp(tmp,".backup",7)== 0){
 			continue;
 		} else {
-			strncat(result,"/",1);
+			strncat(result, "/", strlen(result));
 			strncat(result,tmp,strlen(tmp));
 		}
 	}
 	if(fileName != NULL){
-		strncat(result,"/",1);
+		strncat(result,"/",strlen(result));
 		strncat(result,fileName,strlen(fileName)-4);
 	}
-	//strncat(result, dirName, strlen(dirName)-7);
-	//strncat(result, fileName, strlen(fileName)-4);
 	return 0;
 }
+
 /* Thread to take over copying a file from the .backup directory */
 void *restoreThread(void *arg) {
 	struct restore_args args = *(struct restore_args*)arg;
@@ -435,7 +435,6 @@ int recursiveRestore( char* dname ){
 	//similar to recursive copy, only moving files from the 
 	// backup directory to the main directory
 	int num_threads = 0;
-	printf("Allocating root\n");
 	restore_args *root = (restore_args *) malloc(sizeof(restore_args));	
 	if (root == NULL) {
 		perror("recursiveCopy");
@@ -536,8 +535,10 @@ int recursiveRestore( char* dname ){
 				previous->next = current;
 				previous = current;
 
-			}else if( DEBUG ){
-				printf("Not restoring newer or up-to-date backup file.\n");
+			}else {
+				printf("### TODO move me to the child thread ### ");
+				printf("[thread %d] NOTICE: %s is already the most current version\n", pthread_self(), fname);
+				// printf("Not restoring newer or up-to-date backup file.\n");
 			}
 
 		}else if( S_ISDIR( backup.st_mode ) ){
@@ -630,24 +631,16 @@ int main(int argc, char **argv) {
 		if( DEBUG ){
 			printf("[  main  ] Restoring from backup.\n");
 		}
-		// num = countFiles(restoreDirectory);
-		// threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
 		recursiveRestore(restoreDirectory);
 
 	}else{
 		if( createBackupDir() ){
 			return 1;
 		}
-		
-		// num = countFiles(backupDirectory);
-		// threadList = (pthread_t*) malloc(sizeof(pthread_t) * num);
-		// if (DEBUG) printf("Counted %d files\n", num);
 		if(recursiveCopy(backupDirectory)){
 			return 1;
 		}
 	}
-	// joinThreads(num);
-	// free(threadList);
 	pthread_mutex_lock(&lock);
 	printf("Successfully copied %d files (%d bytes)\n", successfulFiles, totalBytes);
 	pthread_mutex_unlock(&lock);
