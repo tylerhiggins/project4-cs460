@@ -11,7 +11,7 @@
 #include "BackItUp.h"
 
 #define DEBUG 0
-#define BACKUP_DIR "./.backup"
+#define BACKUP_DIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -430,6 +430,10 @@ int recursiveRestore(char* dname){
 	restore_args *previous = root;
 	int i = 0;
 	DIR *backupDir = opendir(dname);
+	if(ENOENT == errno){
+		perror("recursiveRestore");
+		return 1;
+	}
 	struct dirent *backupDirent;
 	while((backupDirent = readdir(backupDir)) != NULL){
 		//check the current object
@@ -601,7 +605,9 @@ int main(int argc, char **argv){
 		if (DEBUG){
 			printf("[  main  ] Restoring from backup.\n");
 		}
-		recursiveRestore(restoreDirectory);
+		if(recursiveRestore(restoreDirectory)==1){
+			return 1;
+		}
 	} else{
 		if (createBackupDir()){
 			return 1;
