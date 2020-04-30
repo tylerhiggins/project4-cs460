@@ -23,6 +23,7 @@ typedef struct restore_args {
     char destination[PATH_MAX];
     int threadNum;
     restore_node *next;
+    int canCpy;
 } restore_args;
 
 void printError(char* error);
