@@ -11,6 +11,7 @@
 #include "BackItUp.h"
 
 #define DEBUG 0
+#define DEBUG2 0
 #define BACKUP_DIR "./.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -181,8 +182,14 @@ int recursiveCopy(char* dname){
 	struct dirent* ds;
 	DIR* dir = opendir(dname);
 	while((ds = readdir(dir)) != NULL){
+		if(DEBUG2){
+			printf("ds->d_name: %s\n",ds->d_name);
+			printf("strncmp result \".\": %d\n", strncmp(ds->d_name, ".",1));
+			printf("strncmp result \"..\": %d\n", strncmp(ds->d_name,"..",2));
+			printf("%d\n",strlen(ds->d_name));
+		}
 		//while the next directory is not null
-		if (strncmp(ds->d_name, ".", 1) != 0 && strncmp(ds->d_name, "..", 2) != 0){
+		if (strlen(ds->d_name) > 2 && strncmp(ds->d_name, ".backup", 7) != 0 || strncmp(ds->d_name, ".", 1) != 0 && strncmp(ds->d_name, "..", 2) != 0){
 			//and this is not the current or previous directory structure
 			//check status of object
 			struct stat st;
@@ -439,10 +446,9 @@ int recursiveRestore(char* dname){
 	struct dirent *backupDirent;
 	while((backupDirent = readdir(backupDir)) != NULL){
 		//check the current object
-		if (strncmp(backupDirent->d_name, ".", 1) == 0 || strncmp(backupDirent->d_name, "..", 2) == 0){
-			//skip the current and previous directory notation
-			continue;
-		}
+		if (strlen(backupDirent->d_name) > 2 && strncmp(backupDirent->d_name,".backup",7) != 0 || strncmp(backupDirent->d_name, ".", 1) != 0 && strncmp(backupDirent->d_name, "..", 2) != 0){
+		
+		
 		//prepend the working directory to the file name
 		char fname[256] = "";
 		strcat(fname, dname);
@@ -529,6 +535,7 @@ int recursiveRestore(char* dname){
 			if (DEBUG) printf("fullDir = %s\n", fullDir);
 			checkDir(fullDir);
 			recursiveRestore(fname);
+		}
 		}
 	}
 	closedir(backupDir);
