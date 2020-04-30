@@ -1,8 +1,9 @@
 # TODO #
-- [18] the canCopy check in recursiveRestore needs to be moved to the thread, right now it is in the main thread. See the sample output in the PDF. a ### TODO is appended to the output 
+- [18] the canCopy check in recursiveRestore needs to be moved to the thread, right now it is in the main thread. See the sample output in the PDF. a `### TODO` is appended to the output 
 - [19] error, Multiple threads restore the same file
 - [20] Make sure hidden files (such as .hidden.txt) get copied and restored
 - [21] error, files with no permissions (chmod 000 file.txt) exit the program early
+- [22] error, running ./BackItUp -r before a .backup directory exists causes a seg fault
 
 # Issues In Progress #
 
