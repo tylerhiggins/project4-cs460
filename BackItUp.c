@@ -11,7 +11,7 @@
 #include "BackItUp.h"
 
 #define DEBUG 0
-#define BACKUP_DIR "testdir/.backup"
+#define BACKUP_DIR "./.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -400,7 +400,7 @@ void *restoreThread(void *arg){
 		filename = tmp;
 	}
 	// Before copy
-	printf("[thread %d] Restoring %.*s\n",args.threadNum, strlen(args.destination-2), args.destination + 2);
+	printf("[thread %d] Restoring %s\n",args.threadNum, filename);
 	int bytes = copyFile(args.fileToRestore, args.destination);
 	// If successful, display message, else display error
 	if (bytes != -1){
@@ -430,10 +430,6 @@ int recursiveRestore(char* dname){
 	restore_args *previous = root;
 	int i = 0;
 	DIR *backupDir = opendir(dname);
-	if(ENOENT == errno){
-		perror("recursiveRestore");
-		return 1;
-	}
 	struct dirent *backupDirent;
 	while((backupDirent = readdir(backupDir)) != NULL){
 		//check the current object
@@ -605,6 +601,13 @@ int main(int argc, char **argv){
 		if (DEBUG){
 			printf("[  main  ] Restoring from backup.\n");
 		}
+		// Look for the .backup directory
+		DIR *backup = opendir(restoreDirectory);
+		if(ENOENT == errno){
+			printf("./BackItUp: No .backup directory found.\n");
+			return 1;
+		}
+		closedir(backup);
 		if(recursiveRestore(restoreDirectory)==1){
 			return 1;
 		}
