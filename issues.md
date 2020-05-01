@@ -1,7 +1,8 @@
 # TODO #
 
 - [19] error, Multiple threads restore the same file
-- [21] error, files with no permissions (chmod 000 file.txt) exit the program early
+- [22] clean up extra messages
+
 
 # Issues In Progress #
 
@@ -32,7 +33,8 @@
 - [17] make sure all methods are being error checked, malloc, pthread funcs, etc
 - [22] error, running ./BackItUp -r before a .backup directory exists causes a seg fault
 - [18] the canCopy check in recursiveRestore needs to be moved to the thread, right now it is in the main thread. See the sample output in the PDF. a `### TODO` is appended to the output
-- [20] hidden files (such as .hidden.txt) don't get copied and may not get restored 
+- [20] hidden files (such as .hidden.txt) don't get copied and may not get restored
+- [21] error, files with no permissions (chmod 000 file.txt) exit the program early 
 
 ## Completed Tests ##
 - [t2] Test backing up large files, csv, and image files

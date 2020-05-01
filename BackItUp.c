@@ -12,7 +12,7 @@
 
 #define DEBUG 0
 #define DEBUG2 0
-#define BACKUP_DIR "testdir/.backup"
+#define BACKUP_DIR "./.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -598,7 +598,7 @@ void joinThreads(pthread_t thread_list[], int count){
 
 // main function of the program.
 int main(int argc, char **argv){
-	char * backupDirectory = "testdir";
+	char * backupDirectory = ".";
 	char * restoreDirectory = BACKUP_DIR;
 	if (DEBUG) printf("[thread main] CWD: %s\n", backupDirectory);
 	int restore = 0;
