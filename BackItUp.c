@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG2 0
 #define BACKUP_DIR "./.backup"
 
@@ -260,9 +260,13 @@ int recursiveCopy(char* dname){
 void freeArgs(copy_args *root){
 	copy_args *current = root->next;
 	copy_args *free_me = NULL;
+
+	printCopyLinkedList(root);
+
 	while(current != NULL){
 		free_me = current;
 		current = current->next;
+		printf("freeing node: %d, %s\n", sizeof(free_me), free_me->filename);
 		free(free_me);
 	}
 }
@@ -334,10 +338,10 @@ void printCopyLinkedList(copy_args *root){
 	int count = 0;
 	while(current != NULL){
 		printf("\t----\n");
-		printf("\t%d\n", current->threadNum);
-		printf("\t%d\n", current->modifiedTime);
-		printf("\t%s\n", current->filename);
-		printf("\t%s\n", current->destination);
+		printf("\t[thread %d]\n", current->threadNum);
+		printf("\tMod Time: %d\n", current->modifiedTime);
+		printf("\tfilename: %s\n", current->filename);
+		printf("\tdestination: %s\n", current->destination);
 		current = current->next;
 	}
 }
