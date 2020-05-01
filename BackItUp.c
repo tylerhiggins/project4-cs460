@@ -12,7 +12,7 @@
 
 #define DEBUG 0
 #define DEBUG2 0
-#define BACKUP_DIR "./.backup"
+#define BACKUP_DIR "testdir/.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -91,7 +91,8 @@ void * backupThread(void *argument){
 	FILE* fp = fopen(args.filename, "r");
 	if (fp == NULL){
 		perror("backupThread");
-		exit(-1);
+		return (void *)-1;
+		//exit(-1);
 	}
 	if (DEBUG){ printf("[thread %d] Opened file: %s\n", args.threadNum, args.filename);}
 
@@ -406,6 +407,9 @@ void *restoreThread(void *arg){
 	while((tmp = strtok_r(rest,"/",&rest))){
 		filename = tmp;
 	}
+	if(args.fileToRestore == NULL){
+		return (void *)-1;
+	}
 	// Before copy
 	printf("[thread %d] Restoring %s\n",args.threadNum, filename);
 	// args.canCpy is determined in recursiveRestore.
@@ -510,7 +514,6 @@ int recursiveRestore(char* dname){
 			FILE *fp = fopen(fname, "r");
 			if (fp == NULL){
 				perror("recursiveRestore");
-				return 1;
 			}
 			current->fileToRestore = fp;
 			strncpy(current->destination, newDest, strlen(newDest) + 1);
@@ -595,7 +598,7 @@ void joinThreads(pthread_t thread_list[], int count){
 
 // main function of the program.
 int main(int argc, char **argv){
-	char * backupDirectory = ".";
+	char * backupDirectory = "testdir";
 	char * restoreDirectory = BACKUP_DIR;
 	if (DEBUG) printf("[thread main] CWD: %s\n", backupDirectory);
 	int restore = 0;
