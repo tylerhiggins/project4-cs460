@@ -1,5 +1,5 @@
 # TODO #
-- [23] fix issue where it is unable to copy some files
+- [23] fix issue where it is unable to copy some files, problem is at line 509
 - [24] test project on the school lx server
 - [25] make sure DEBUG is off, run `make zip`, and submit!
 
