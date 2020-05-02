@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG2 0
 #define BACKUP_DIR "./.backup"
 
@@ -177,6 +177,12 @@ int recursiveCopy(char* dname){
 	if (root == NULL){
 		perror("recursiveCopy");
 	}
+	root->threadNum = -1;
+	root->modifiedTime = - 1;
+	root->filename[0] = '\0';
+	root->destination[0] = '\0';
+	root->next = NULL;
+	
 	copy_args *previous = root;
 	int i = 0;
 
@@ -213,6 +219,7 @@ int recursiveCopy(char* dname){
 				if (current == NULL){
 					perror("recursiveCopy");
 					freeArgs(root);
+					exit(-1);
 				}	
 				current->next = NULL;
 
@@ -241,7 +248,7 @@ int recursiveCopy(char* dname){
 				char backup[4096] = BACKUP_DIR;
 				strncat(backup, newPath, strlen(newPath));
 				free(newPath);
-				if (DEBUG) printf("Checking to see if %s exists... ", backup);
+				if (DEBUG) printf("[  main  ] Checking to see if %s exists... ", backup);
 				int status = checkDir(backup);
 				if (DEBUG) if (status == 2) printf("directory already exists!\n");
 				else if (status == 0) printf("Created new directory %s\n", backup);
@@ -260,14 +267,14 @@ int recursiveCopy(char* dname){
 void freeArgs(copy_args *root){
 	copy_args *current = root->next;
 	copy_args *free_me = NULL;
-
-	printCopyLinkedList(root);
-
 	while(current != NULL){
 		free_me = current;
 		current = current->next;
-		printf("freeing node: %d, %s\n", sizeof(free_me), free_me->filename);
+		
+		// if (DEBUG) printCopyNode(free_me);
+		if (DEBUG) printf("[thread %d] FREE'D\n\n", free_me->threadNum);
 		free(free_me);
+		free_me = NULL;
 	}
 }
 
@@ -280,6 +287,7 @@ Frees the memory of all
 void traverseCopyList(copy_args *root, int count){
 	copy_args *current;
 	copy_args *free_me;
+	copy_args *tmp;
 	current = root->next;
 	pthread_t thread_list[count];
 	int total = 0;
@@ -291,7 +299,9 @@ void traverseCopyList(copy_args *root, int count){
 			return;
 		}
 		total++;
-		current= current->next;
+		tmp = current;
+		current = current->next;
+		tmp = NULL;
 	}
 	int thread = 0;
 	for (int i = 0; i < total; i++){
@@ -344,6 +354,14 @@ void printCopyLinkedList(copy_args *root){
 		printf("\tdestination: %s\n", current->destination);
 		current = current->next;
 	}
+}
+
+void printCopyNode(copy_args *node){
+	printf("\t----\n");
+	printf("\t[thread %d]\n", node->threadNum);
+	printf("\tMod Time: %d\n", node->modifiedTime);
+	printf("\tfilename: %s\n", node->filename);
+	printf("\tdestination: %s\n", node->destination);
 }
 
 // Frees all nodes of the linked list except for the root node 

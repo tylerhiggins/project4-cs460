@@ -19,7 +19,7 @@ c.o:
 
 # program tests
 valgrind: clean all
-	valgrind --leak-check=full ./${BACKITUP}
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./${BACKITUP}
 
 backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---

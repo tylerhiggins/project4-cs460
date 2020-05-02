@@ -42,7 +42,9 @@ void joinThreads(pthread_t *thread_list, int count);
 
 int countFiles(char* dname);
 
-void printLinkedList(copy_args *root);
+void printCopyLinkedList(copy_args *root);
+
+void printCopyNode(copy_args *node);
 
 void freeArgs(copy_args *root);
 
