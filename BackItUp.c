@@ -474,7 +474,6 @@ int recursiveRestore(char* dname){
 		//check the current object
 		if (strlen(backupDirent->d_name) > 2 && strncmp(backupDirent->d_name,".backup",7) != 0 || strncmp(backupDirent->d_name, ".", 1) != 0 && strncmp(backupDirent->d_name, "..", 2) != 0){
 		
-		
 		//prepend the working directory to the file name
 		char fname[256] = "";
 		strcat(fname, dname);

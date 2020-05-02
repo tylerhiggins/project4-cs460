@@ -35,6 +35,15 @@ get_test:
 	echo "Downloading Test Repo"
 	git clone git@github.com:JulianKeller/testfiles.git
 
+test1: all
+
+	touch test/a
+	mkdir test/dir1 test/dir2
+	mkdir test/dir1/dir3
+	touch test/dir1/dir3/b
+	tree -a test
+	echo " " 
+
 test: all
 	echo ""
 	echo "Backing up all files"
