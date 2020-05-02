@@ -84,7 +84,7 @@ void * backupThread(void *argument){
 	int bytes = 0;
 	// load in the struct
 	struct copy_args args = *(struct copy_args*)argument;
-	printf("[thread %d] Backing up %.*s\n", args.threadNum, strlen(args.filename) - 2, args.filename + 2);
+	printf("[thread %d] Backing up %.*s\n", args.threadNum, (int) strlen(args.filename) - 2, args.filename + 2);
 
 	//if so, copy the file to the backup directory
 	//open just for reading
@@ -113,16 +113,16 @@ void * backupThread(void *argument){
 	}
 	if (canCopy){
 		if (exists){
-			printf("[thread %d] WARNING: Overwriting %.*s\n", args.threadNum, strlen(args.filename) - 2, args.filename + 2);
+			printf("[thread %d] WARNING: Overwriting %.*s\n", args.threadNum, (int) strlen(args.filename) - 2, args.filename + 2);
 		}
 		if (DEBUG){ printf("Copying file: %s to %s\n", args.filename, args.destination);}
 		bytes = copyFile(fp, args.destination);	
 		if (bytes > 0){
 			updateTotalBytes(bytes);
 		}
-		printf("[thread %d] Copied %d bytes from %.*s to %.*s\n", args.threadNum, bytes, strlen(args.filename) - 2, args.filename + 2, strlen(args.destination) - 2, args.destination + 2);
+		printf("[thread %d] Copied %d bytes from %.*s to %.*s\n", args.threadNum, bytes, (int) strlen(args.filename) - 2, args.filename + 2, (int) strlen(args.destination) - 2, args.destination + 2);
 	} else if (exists){
-		printf("[thread %d] NOTICE: %.*s is already the most current version\n", args.threadNum, strlen(args.filename) - 2, args.filename + 2);
+		printf("[thread %d] NOTICE: %.*s is already the most current version\n", args.threadNum, (int) strlen(args.filename) - 2, args.filename + 2);
 	}
 	fclose(fp);
 	pthread_exit(NULL);
@@ -193,7 +193,7 @@ int recursiveCopy(char* dname){
 			printf("ds->d_name: %s\n",ds->d_name);
 			printf("strncmp result \".\": %d\n", strncmp(ds->d_name, ".",1));
 			printf("strncmp result \"..\": %d\n", strncmp(ds->d_name,"..",2));
-			printf("%d\n",strlen(ds->d_name));
+			printf("%ld\n",strlen(ds->d_name));
 		}
 		//while the next directory is not null
 		if (strlen(ds->d_name) > 2 && strncmp(ds->d_name, ".backup", 7) != 0 || strncmp(ds->d_name, ".", 1) != 0 && strncmp(ds->d_name, "..", 2) != 0){
@@ -349,7 +349,7 @@ void printCopyLinkedList(copy_args *root){
 	while(current != NULL){
 		printf("\t----\n");
 		printf("\t[thread %d]\n", current->threadNum);
-		printf("\tMod Time: %d\n", current->modifiedTime);
+		printf("\tMod Time: %ld\n", current->modifiedTime);
 		printf("\tfilename: %s\n", current->filename);
 		printf("\tdestination: %s\n", current->destination);
 		current = current->next;
@@ -359,7 +359,7 @@ void printCopyLinkedList(copy_args *root){
 void printCopyNode(copy_args *node){
 	printf("\t----\n");
 	printf("\t[thread %d]\n", node->threadNum);
-	printf("\tMod Time: %d\n", node->modifiedTime);
+	printf("\tMod Time: %ld\n", node->modifiedTime);
 	printf("\tfilename: %s\n", node->filename);
 	printf("\tdestination: %s\n", node->destination);
 }
@@ -421,7 +421,7 @@ int backupToMainPath(char* result, char* dirName, char* fileName){
 void *restoreThread(void *arg){
 	struct restore_args args = *(struct restore_args*)arg;
 	char destination[256] = "";
-	strncpy(destination,args.destination,strlen(args.destination));
+	strncpy(destination,args.destination,(int) strlen(args.destination));
 	char *filename = NULL;
 	char *tmp;
 	char *rest = destination;
