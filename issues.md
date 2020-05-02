@@ -1,7 +1,4 @@
 # TODO #
-- [23] fix issue where it is unable to copy some files, problem is at line 509
-- [24] test project on the school lx server
-- [25] make sure DEBUG is off, run `make zip`, and submit!
 
 # Issues In Progress #
 
@@ -36,6 +33,9 @@
 - [20] hidden files (such as .hidden.txt) don't get copied and may not get restored
 - [21] error, files with no permissions (chmod 000 file.txt) exit the program early 
 - [22] clean up extra messages
+- [23] fix issue where it is unable to copy some files, problem is at line 509
+- [24] test project on the school lx server
+- [25] make sure DEBUG is off, run `make zip`, and submit!
 
 ## Completed Tests ##
 - [t2] Test backing up large files, csv, and image files
