@@ -11,6 +11,7 @@
 #include "BackItUp.h"
 
 #define DEBUG 0
+#define DEBUG2 0
 #define BACKUP_DIR "./.backup"
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -83,14 +84,15 @@ void * backupThread(void *argument){
 	int bytes = 0;
 	// load in the struct
 	struct copy_args args = *(struct copy_args*)argument;
-	printf("[thread %d] Backing up %.*s\n", args.threadNum, strlen(args.filename) - 2, args.filename + 2);
+	printf("[thread %d] Backing up %.*s\n", args.threadNum, (int) strlen(args.filename) - 2, args.filename + 2);
 
 	//if so, copy the file to the backup directory
 	//open just for reading
 	FILE* fp = fopen(args.filename, "r");
 	if (fp == NULL){
 		perror("backupThread");
-		exit(-1);
+		return (void *)-1;
+		//exit(-1);
 	}
 	if (DEBUG){ printf("[thread %d] Opened file: %s\n", args.threadNum, args.filename);}
 
@@ -111,16 +113,16 @@ void * backupThread(void *argument){
 	}
 	if (canCopy){
 		if (exists){
-			printf("[thread %d] WARNING: Overwriting %.*s\n", args.threadNum, strlen(args.filename) - 2, args.filename + 2);
+			printf("[thread %d] WARNING: Overwriting %.*s\n", args.threadNum, (int) strlen(args.filename) - 2, args.filename + 2);
 		}
 		if (DEBUG){ printf("Copying file: %s to %s\n", args.filename, args.destination);}
 		bytes = copyFile(fp, args.destination);	
 		if (bytes > 0){
 			updateTotalBytes(bytes);
 		}
-		printf("[thread %d] Copied %d bytes from %.*s to %.*s\n", args.threadNum, bytes, strlen(args.filename) - 2, args.filename + 2, strlen(args.destination) - 2, args.destination + 2);
+		printf("[thread %d] Copied %d bytes from %.*s to %.*s\n", args.threadNum, bytes, (int) strlen(args.filename) - 2, args.filename + 2, (int) strlen(args.destination) - 2, args.destination + 2);
 	} else if (exists){
-		printf("[thread %d] NOTICE: %.*s is already the most current version\n", args.threadNum, strlen(args.filename) - 2, args.filename + 2);
+		printf("[thread %d] NOTICE: %.*s is already the most current version\n", args.threadNum, (int) strlen(args.filename) - 2, args.filename + 2);
 	}
 	fclose(fp);
 	pthread_exit(NULL);
@@ -175,14 +177,26 @@ int recursiveCopy(char* dname){
 	if (root == NULL){
 		perror("recursiveCopy");
 	}
+	root->threadNum = -1;
+	root->modifiedTime = - 1;
+	root->filename[0] = '\0';
+	root->destination[0] = '\0';
+	root->next = NULL;
+	
 	copy_args *previous = root;
 	int i = 0;
 
 	struct dirent* ds;
 	DIR* dir = opendir(dname);
 	while((ds = readdir(dir)) != NULL){
+		if(DEBUG2){
+			printf("ds->d_name: %s\n",ds->d_name);
+			printf("strncmp result \".\": %d\n", strncmp(ds->d_name, ".",1));
+			printf("strncmp result \"..\": %d\n", strncmp(ds->d_name,"..",2));
+			printf("%ld\n",strlen(ds->d_name));
+		}
 		//while the next directory is not null
-		if (strncmp(ds->d_name, ".", 1) != 0 && strncmp(ds->d_name, "..", 2) != 0){
+		if (strlen(ds->d_name) > 2 && strncmp(ds->d_name, ".backup", 7) != 0 || strncmp(ds->d_name, ".", 1) != 0 && strncmp(ds->d_name, "..", 2) != 0){
 			//and this is not the current or previous directory structure
 			//check status of object
 			struct stat st;
@@ -205,6 +219,7 @@ int recursiveCopy(char* dname){
 				if (current == NULL){
 					perror("recursiveCopy");
 					freeArgs(root);
+					exit(-1);
 				}	
 				current->next = NULL;
 
@@ -233,7 +248,7 @@ int recursiveCopy(char* dname){
 				char backup[4096] = BACKUP_DIR;
 				strncat(backup, newPath, strlen(newPath));
 				free(newPath);
-				if (DEBUG) printf("Checking to see if %s exists... ", backup);
+				if (DEBUG) printf("[  main  ] Checking to see if %s exists... ", backup);
 				int status = checkDir(backup);
 				if (DEBUG) if (status == 2) printf("directory already exists!\n");
 				else if (status == 0) printf("Created new directory %s\n", backup);
@@ -255,7 +270,11 @@ void freeArgs(copy_args *root){
 	while(current != NULL){
 		free_me = current;
 		current = current->next;
+		
+		// if (DEBUG) printCopyNode(free_me);
+		if (DEBUG) printf("[thread %d] FREE'D\n\n", free_me->threadNum);
 		free(free_me);
+		free_me = NULL;
 	}
 }
 
@@ -268,6 +287,7 @@ Frees the memory of all
 void traverseCopyList(copy_args *root, int count){
 	copy_args *current;
 	copy_args *free_me;
+	copy_args *tmp;
 	current = root->next;
 	pthread_t thread_list[count];
 	int total = 0;
@@ -279,7 +299,9 @@ void traverseCopyList(copy_args *root, int count){
 			return;
 		}
 		total++;
-		current= current->next;
+		tmp = current;
+		current = current->next;
+		tmp = NULL;
 	}
 	int thread = 0;
 	for (int i = 0; i < total; i++){
@@ -326,12 +348,20 @@ void printCopyLinkedList(copy_args *root){
 	int count = 0;
 	while(current != NULL){
 		printf("\t----\n");
-		printf("\t%d\n", current->threadNum);
-		printf("\t%d\n", current->modifiedTime);
-		printf("\t%s\n", current->filename);
-		printf("\t%s\n", current->destination);
+		printf("\t[thread %d]\n", current->threadNum);
+		printf("\tMod Time: %ld\n", current->modifiedTime);
+		printf("\tfilename: %s\n", current->filename);
+		printf("\tdestination: %s\n", current->destination);
 		current = current->next;
 	}
+}
+
+void printCopyNode(copy_args *node){
+	printf("\t----\n");
+	printf("\t[thread %d]\n", node->threadNum);
+	printf("\tMod Time: %ld\n", node->modifiedTime);
+	printf("\tfilename: %s\n", node->filename);
+	printf("\tdestination: %s\n", node->destination);
 }
 
 // Frees all nodes of the linked list except for the root node 
@@ -391,7 +421,7 @@ int backupToMainPath(char* result, char* dirName, char* fileName){
 void *restoreThread(void *arg){
 	struct restore_args args = *(struct restore_args*)arg;
 	char destination[256] = "";
-	strncpy(destination,args.destination,strlen(args.destination));
+	strncpy(destination,args.destination,(int) strlen(args.destination));
 	char *filename = NULL;
 	char *tmp;
 	char *rest = destination;
@@ -399,16 +429,24 @@ void *restoreThread(void *arg){
 	while((tmp = strtok_r(rest,"/",&rest))){
 		filename = tmp;
 	}
+	if(args.fileToRestore == NULL){
+		return (void *)-1;
+	}
 	// Before copy
-	printf("[thread %d] Restoring %.*s\n",args.threadNum, strlen(args.destination-2), args.destination + 2);
-	int bytes = copyFile(args.fileToRestore, args.destination);
-	// If successful, display message, else display error
-	if (bytes != -1){
-		printf("[thread %d] Copied %d bytes from %s.bak to %s\n", args.threadNum,bytes,
-			filename,filename);
-		updateTotalBytes(bytes);
+	printf("[thread %d] Restoring %s\n",args.threadNum, filename);
+	// args.canCpy is determined in recursiveRestore.
+	if(args.canCpy){
+		int bytes = copyFile(args.fileToRestore, args.destination);
+		// If successful, display message, else display error
+		if (bytes != -1){
+			printf("[thread %d] Copied %d bytes from %s.bak to %s\n", args.threadNum,bytes,
+				filename,filename);
+			updateTotalBytes(bytes);
+		} else {
+			printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
+		}
 	} else {
-		printf("[thread %d] ERROR: could not copy %s.bak to %s\n", args.threadNum, filename,filename);
+		printf("[thread %d] NOTICE: %s is already the most current version\n",args.threadNum, filename);
 	}
 	fclose(args.fileToRestore); 
 }
@@ -427,16 +465,15 @@ int recursiveRestore(char* dname){
 	root->threadNum = 0;
 	root->fileToRestore = 0;
 	root->next = NULL;
+	root->canCpy = 0;
 	restore_args *previous = root;
 	int i = 0;
 	DIR *backupDir = opendir(dname);
 	struct dirent *backupDirent;
 	while((backupDirent = readdir(backupDir)) != NULL){
 		//check the current object
-		if (strncmp(backupDirent->d_name, ".", 1) == 0 || strncmp(backupDirent->d_name, "..", 2) == 0){
-			//skip the current and previous directory notation
-			continue;
-		}
+		if (strlen(backupDirent->d_name) > 2 && strncmp(backupDirent->d_name,".backup",7) != 0 || strncmp(backupDirent->d_name, ".", 1) != 0 && strncmp(backupDirent->d_name, "..", 2) != 0){
+		
 		//prepend the working directory to the file name
 		char fname[256] = "";
 		strcat(fname, dname);
@@ -447,7 +484,6 @@ int recursiveRestore(char* dname){
 		int err = lstat(fname, &backup);
 		if (err == -1){
 			perror("recursiveRestore");
-			return 1;
 		}
 
 		//check if it is a regular file
@@ -462,62 +498,57 @@ int recursiveRestore(char* dname){
 			if (access(fname, F_OK) != -1){
 				//file exists
 				struct stat tmp;
-				if (DEBUG) printf("dname = %s\n", dname);
-				if (DEBUG) printf("backupDirent->d_name = %s\n", backupDirent->d_name);
+				if (DEBUG) printf("[  main  ] dname = %s\n", dname);
+				if (DEBUG) printf("[  main  ] backupDirent->d_name = %s\n", backupDirent->d_name);
 				backupToMainPath(newDest, dname, backupDirent->d_name);
 
 				err = lstat(newDest, &tmp);
 				if (err == -1){
-					perror("recursiveRestore");
+					if (DEBUG) printf("[  main  ] Error: unable to cp %s to %s\n", fname, newDest);
+					canCopy = 1;
 				} else{
 					//compare modification times
 					canCopy = (backup.st_mtime < tmp.st_mtime);
 				}
 			}
 			if (DEBUG){
-				printf("canCopy: %d\n", canCopy);
+				printf("[  main  ] canCopy: %d, %s\n", canCopy, fname);
 			}
 
-			if (canCopy){
-				if (DEBUG){
-					printf("[  main  ] Restoring file.\n");
-				}
-				//perform the copy
-				// init current node
-				restore_args *current = (restore_args *) malloc(sizeof(restore_args));
-				if (current == NULL){
-					perror("recursiveRestore");
-					freeRestoreLinkedList(root);
-				}	
-				current->next = NULL;
-				current->fileToRestore = NULL;
-				strncpy(current->destination, "",1);
-				current->threadNum = 0;
-
-				//open file for reading only
-				FILE *fp = fopen(fname, "r");
-				if (fp == NULL){
-					perror("recursiveRestore");
-					return 1;
-				}
-				current->fileToRestore = fp;
-				strncpy(current->destination, newDest, strlen(newDest) + 1);
-				if (DEBUG){
-					printf("[  main  ] newDest: %s\n", newDest);
-					printf("[  main  ] current->destination: %s\n", current->destination);
-				}
-				total_threads++;
-				i++;
-				current->threadNum = total_threads;
-
-				// connect linked list pointers
-				previous->next = current;
-				previous = current;
-
-			} else {
-				printf("### TODO move me to the child thread ### ");
-				printf("[thread %d] NOTICE: %.*s is already the most current version\n", pthread_self(), strlen(fname) - 2, fname + 2);
+			if (DEBUG){
+				printf("[  main  ] Restoring file.\n");
 			}
+			//perform the copy
+			// init current node
+			restore_args *current = (restore_args *) malloc(sizeof(restore_args));
+			if (current == NULL){
+				perror("recursiveRestore");
+				freeRestoreLinkedList(root);
+			}	
+			current->next = NULL;
+			current->fileToRestore = NULL;
+			strncpy(current->destination, "",1);
+			current->threadNum = 0;
+			current->canCpy = canCopy;
+
+			//open file for reading only
+			FILE *fp = fopen(fname, "r");
+			if (fp == NULL){
+				perror("recursiveRestore");
+			}
+			current->fileToRestore = fp;
+			strncpy(current->destination, newDest, strlen(newDest) + 1);
+			if (DEBUG){
+				printf("[  main  ] newDest: %s\n", newDest);
+				printf("[  main  ] current->destination: %s\n", current->destination);
+			}
+			total_threads++;
+			i++;
+			current->threadNum = total_threads;
+
+			// connect linked list pointers
+			previous->next = current;
+			previous = current;
 
 		} else if (S_ISDIR(backup.st_mode)){
 			char splitString[4096] = "";
@@ -528,6 +559,7 @@ int recursiveRestore(char* dname){
 			if (DEBUG) printf("fullDir = %s\n", fullDir);
 			checkDir(fullDir);
 			recursiveRestore(fname);
+		}
 		}
 	}
 	closedir(backupDir);
@@ -601,7 +633,16 @@ int main(int argc, char **argv){
 		if (DEBUG){
 			printf("[  main  ] Restoring from backup.\n");
 		}
-		recursiveRestore(restoreDirectory);
+		// Look for the .backup directory
+		DIR *backup = opendir(restoreDirectory);
+		if(ENOENT == errno){
+			printf("./BackItUp: No .backup directory found.\n");
+			return 1;
+		}
+		closedir(backup);
+		if(recursiveRestore(restoreDirectory)==1){
+			return 1;
+		}
 	} else{
 		if (createBackupDir()){
 			return 1;

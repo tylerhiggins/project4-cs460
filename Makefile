@@ -19,7 +19,7 @@ c.o:
 
 # program tests
 valgrind: clean all
-	valgrind --leak-check=full ./${BACKITUP}
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./${BACKITUP}
 
 backitup-test: ${BACKITUP}
 	@echo --- Running Test 1 esh ---
@@ -30,6 +30,43 @@ restore: all
 	
 tree:
 	tree -a testdir/
+
+get_test:
+	echo "Downloading Test Repo"
+	git clone git@github.com:JulianKeller/testfiles.git
+
+test1: all
+
+	touch test/a
+	mkdir test/dir1 test/dir2
+	mkdir test/dir1/dir3
+	touch test/dir1/dir3/b
+	tree -a test
+	echo " " 
+
+test: all
+	echo ""
+	echo "Backing up all files"
+	./${BACKITUP}
+
+	echo ""
+	echo "Backing up all files a second time"
+	./${BACKITUP}
+
+	echo ""
+	echo "Deleting testfiles/"
+	rm -rf testfiles/
+
+	echo ""
+	echo "Restoring up all files"
+	./${BACKITUP} -r
+
+	echo ""
+	echo "Restoring up all files second time"
+	./${BACKITUP} -r
+
+count_files:
+	find . | wc -l
 
 rm: 
 	rm -r testdir/.backup
