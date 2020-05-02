@@ -1,7 +1,6 @@
 # TODO #
-
-- [22] clean up extra messages
-
+- [23] fix issue where it is unable to copy some files
+- [24] make sure DEBUG is off, run `make zip`, and submit!
 
 # Issues In Progress #
 
@@ -35,6 +34,7 @@
 - [19] error, Multiple threads restore the same file
 - [20] hidden files (such as .hidden.txt) don't get copied and may not get restored
 - [21] error, files with no permissions (chmod 000 file.txt) exit the program early 
+- [22] clean up extra messages
 
 ## Completed Tests ##
 - [t2] Test backing up large files, csv, and image files
