@@ -10,7 +10,7 @@
 
 #include "BackItUp.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG2 0
 #define BACKUP_DIR "./.backup"
 
@@ -483,8 +483,7 @@ int recursiveRestore(char* dname){
 		struct stat backup;
 		int err = lstat(fname, &backup);
 		if (err == -1){
-			// perror("recursiveRestore");
-			return 1;
+			perror("recursiveRestore");
 		}
 
 		//check if it is a regular file
@@ -506,8 +505,7 @@ int recursiveRestore(char* dname){
 				err = lstat(newDest, &tmp);
 				if (err == -1){
 					if (DEBUG) printf("[  main  ] Error: unable to cp %s to %s\n", fname, newDest);
-					perror("recursiveRestore");
-					continue;
+					canCopy = 1;
 				} else{
 					//compare modification times
 					canCopy = (backup.st_mtime < tmp.st_mtime);
