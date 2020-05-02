@@ -327,7 +327,7 @@ void printCopyLinkedList(copy_args *root){
 	while(current != NULL){
 		printf("\t----\n");
 		printf("\t%d\n", current->threadNum);
-		printf("\t%d\n", current->modifiedTime);
+		printf("\t%ld\n", current->modifiedTime);
 		printf("\t%s\n", current->filename);
 		printf("\t%s\n", current->destination);
 		current = current->next;
@@ -400,7 +400,7 @@ void *restoreThread(void *arg){
 		filename = tmp;
 	}
 	// Before copy
-	printf("[thread %d] Restoring %.*s\n",args.threadNum, strlen(args.destination-2), args.destination + 2);
+	printf("[thread %d] Restoring %.*s\n",args.threadNum, (int) strlen(args.destination-2), args.destination + 2);
 	int bytes = copyFile(args.fileToRestore, args.destination);
 	// If successful, display message, else display error
 	if (bytes != -1){
@@ -516,7 +516,7 @@ int recursiveRestore(char* dname){
 
 			} else {
 				printf("### TODO move me to the child thread ### ");
-				printf("[thread %d] NOTICE: %.*s is already the most current version\n", pthread_self(), strlen(fname) - 2, fname + 2);
+				printf("[thread %ld] NOTICE: %.*s is already the most current version\n", pthread_self(), (int) strlen(fname) - 2, fname + 2);
 			}
 
 		} else if (S_ISDIR(backup.st_mode)){
